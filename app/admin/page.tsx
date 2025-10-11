@@ -25,6 +25,7 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(true);
+  const [checkingAuth, setCheckingAuth] = useState(false);
   const [users, setUsers] = useState<UserWithDetails[]>([]);
 
   useEffect(() => {
@@ -34,29 +35,69 @@ export default function AdminPage() {
   }, [user, isLoading, router]);
 
   useEffect(() => {
-    // Check if already authenticated in session
-    const adminAuth = sessionStorage.getItem('admin_authenticated');
-    if (adminAuth === 'true') {
-      setIsAuthenticated(true);
-      loadAllData();
-    } else {
-      setLoading(false);
-    }
+    // Check if already authenticated via server session
+    checkAuthentication();
   }, []);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const checkAuthentication = async () => {
+    setCheckingAuth(true);
+    try {
+      const response = await fetch('/api/admin/verify');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+          loadAllData();
+        } else {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setLoading(false);
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCheckingAuth(true);
 
-    // Check password (in production, this should be more secure)
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
 
-    if (password === adminPassword) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('admin_authenticated', 'true');
-      toast.success('Access granted');
-      loadAllData();
-    } else {
-      toast.error('Incorrect password');
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setIsAuthenticated(true);
+        toast.success('Access granted');
+        loadAllData();
+      } else {
+        toast.error(data.error || 'Incorrect password');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      setIsAuthenticated(false);
+      setPassword('');
+      toast.success('Logged out');
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   };
 
@@ -146,7 +187,7 @@ export default function AdminPage() {
     toast.success('CSV exported successfully');
   };
 
-  if (isLoading) {
+  if (isLoading || checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -190,10 +231,11 @@ export default function AdminPage() {
                     placeholder="Enter admin password"
                     autoFocus
                     required
+                    disabled={checkingAuth}
                   />
                 </div>
-                <Button type="submit" className="w-full">
-                  Unlock Admin Panel
+                <Button type="submit" className="w-full" disabled={checkingAuth}>
+                  {checkingAuth ? 'Verifying...' : 'Unlock Admin Panel'}
                 </Button>
               </form>
             </CardContent>
@@ -237,10 +279,15 @@ export default function AdminPage() {
               Overview of all RSVPs and activity signups
             </p>
           </div>
-          <Button onClick={exportToCSV} variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={exportToCSV} variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button onClick={handleLogout} variant="outline">
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* Stats Overview */}
