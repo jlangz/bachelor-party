@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from './ui/button';
-import { Home, Info, Calendar, Trophy, Shield, LogOut, Dices, User, Users } from 'lucide-react';
+import { Home, Info, Calendar, Trophy, Shield, LogOut, Dices, User, Users, MapPin } from 'lucide-react';
 
 export function Navigation() {
   const pathname = usePathname();
@@ -21,6 +21,7 @@ export function Navigation() {
     { href: '/info', label: 'Event Info', icon: Info },
     { href: '/rsvp', label: 'RSVP', icon: Calendar },
     { href: '/activities', label: 'Activities', icon: Trophy },
+    { href: '/recommendations', label: 'Places', icon: MapPin },
     { href: '/directory', label: 'Directory', icon: Users },
     { href: '/profile', label: 'Profile', icon: User },
     { href: '/admin', label: 'Admin', icon: Shield },

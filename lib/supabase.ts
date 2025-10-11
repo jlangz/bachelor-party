@@ -120,3 +120,53 @@ export type Activity = {
   location: string | null;
   additional_notes: string | null;
 };
+
+// Recommendations types
+export type RecommendationCategory = 'restaurant' | 'bar' | 'club' | 'cafe' | 'other';
+export type PriceRange = '$' | '$$' | '$$$' | '$$$$';
+export type ReservationStatus = 'none' | 'recommended' | 'required' | 'booked';
+
+export type Recommendation = {
+  id: string;
+  user_id: string;
+  name: string;
+  category: RecommendationCategory;
+  description: string | null;
+  address: string;
+  latitude: number;
+  longitude: number;
+  google_maps_url: string | null;
+  price_range: PriceRange | null;
+  reservation_status: ReservationStatus;
+  reservation_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RecommendationLike = {
+  id: string;
+  recommendation_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+export type RecommendationComment = {
+  id: string;
+  recommendation_id: string;
+  user_id: string;
+  comment: string;
+  created_at: string;
+  updated_at: string;
+};
+
+// Extended types with relations
+export type RecommendationWithUser = Recommendation & {
+  user: Pick<User, 'id' | 'name'>;
+  likes_count: number;
+  comments_count: number;
+  user_has_liked: boolean;
+};
+
+export type RecommendationCommentWithUser = RecommendationComment & {
+  user: Pick<User, 'id' | 'name'>;
+};
