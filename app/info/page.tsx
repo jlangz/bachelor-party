@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Navigation } from '@/components/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Calendar, Bed, DollarSign, Gun, Theater, Plane, Clock, AlertCircle } from 'lucide-react';
+import { MapPin, Calendar, Bed, DollarSign, Target, Theater, Plane, Clock, AlertCircle } from 'lucide-react';
 
 export default function InfoPage() {
   const { user, isLoading } = useAuth();
@@ -133,7 +133,7 @@ export default function InfoPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-start gap-3">
-                <Gun className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+                <Target className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
                 <div>
                   <p className="font-medium text-lg">Morning: Shooting Range</p>
                   <p className="text-sm text-muted-foreground mb-2">
@@ -259,7 +259,7 @@ export default function InfoPage() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-start gap-2">
-                  <Gun className="w-4 h-4 mt-1 text-primary" />
+                  <Target className="w-4 h-4 mt-1 text-primary" />
                   <div>
                     <p className="text-sm font-medium">Shooting</p>
                     <p className="text-xs text-muted-foreground">Saturday morning ($100–150)</p>

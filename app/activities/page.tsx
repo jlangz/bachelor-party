@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { supabase, ActivitySignup, ActivityType, ParticipationLevel } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Gun, Theater, Users, DollarSign, Clock, Save } from 'lucide-react';
+import { Target, Theater, Users, DollarSign, Clock, Save } from 'lucide-react';
 
 export default function ActivitiesPage() {
   const { user, isLoading } = useAuth();
@@ -186,7 +186,7 @@ export default function ActivitiesPage() {
         <Card className="mb-6 border-primary/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-2xl">
-              <Gun className="w-6 h-6 text-primary" />
+              <Target className="w-6 h-6 text-primary" />
               Shooting Range
             </CardTitle>
             <CardDescription className="text-base">
