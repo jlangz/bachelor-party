@@ -77,17 +77,22 @@ export type ImportantInfoItem = {
 export type EventInfo = {
   id: string;
   event_name: string;
+  short_description: string | null;
   event_date_start: string | null;
   event_date_end: string | null;
+  event_date_start_time: string | null;
+  event_date_end_time: string | null;
   location_name: string | null;
   location_address: string | null;
+  airbnb_house_name: string | null;
+  airbnb_address: string | null;
   description: string | null;
   house_beds_total: number;
   additional_info: Record<string, any>;
   updated_at: string;
   updated_by: string | null;
   // Enhanced fields
-  rich_description: any; // TipTap/Lexical JSON
+  rich_description: any; // TipTap JSON
   schedule: ScheduleItem[];
   important_info: ImportantInfoItem[];
 };

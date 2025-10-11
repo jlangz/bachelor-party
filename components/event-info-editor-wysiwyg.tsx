@@ -189,6 +189,18 @@ export function EventInfoEditorWYSIWYG({ userId }: EventInfoEditorWYSIWYGProps) 
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="short_description">Short Description</Label>
+                <Textarea
+                  id="short_description"
+                  value={eventInfo.short_description || ''}
+                  onChange={(e) => setEventInfo({ ...eventInfo, short_description: e.target.value })}
+                  placeholder="A quick tagline or summary (appears at the top of the event page)"
+                  rows={2}
+                  disabled={loading}
+                />
+              </div>
+
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="event_date_start">Start Date</Label>
@@ -202,12 +214,36 @@ export function EventInfoEditorWYSIWYG({ userId }: EventInfoEditorWYSIWYGProps) 
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="event_date_start_time">Start Time</Label>
+                  <Input
+                    id="event_date_start_time"
+                    type="time"
+                    value={eventInfo.event_date_start_time || ''}
+                    onChange={(e) => setEventInfo({ ...eventInfo, event_date_start_time: e.target.value })}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="event_date_end">End Date</Label>
                   <Input
                     id="event_date_end"
                     type="date"
                     value={eventInfo.event_date_end || ''}
                     onChange={(e) => setEventInfo({ ...eventInfo, event_date_end: e.target.value })}
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="event_date_end_time">End Time</Label>
+                  <Input
+                    id="event_date_end_time"
+                    type="time"
+                    value={eventInfo.event_date_end_time || ''}
+                    onChange={(e) => setEventInfo({ ...eventInfo, event_date_end_time: e.target.value })}
                     disabled={loading}
                   />
                 </div>
@@ -222,22 +258,33 @@ export function EventInfoEditorWYSIWYG({ userId }: EventInfoEditorWYSIWYGProps) 
                   id="location_name"
                   value={eventInfo.location_name || ''}
                   onChange={(e) => setEventInfo({ ...eventInfo, location_name: e.target.value })}
-                  placeholder="The House"
+                  placeholder="Yellowstone, Montana"
                   disabled={loading}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location_address">Full Address</Label>
+                <Label htmlFor="airbnb_house_name">Airbnb House Name</Label>
                 <Input
-                  id="location_address"
-                  value={eventInfo.location_address || ''}
-                  onChange={(e) => setEventInfo({ ...eventInfo, location_address: e.target.value })}
-                  placeholder="123 Party Street, Fun City, FC 12345"
+                  id="airbnb_house_name"
+                  value={eventInfo.airbnb_house_name || ''}
+                  onChange={(e) => setEventInfo({ ...eventInfo, airbnb_house_name: e.target.value })}
+                  placeholder="The Mountain Lodge"
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="airbnb_address">Airbnb Address</Label>
+                <Input
+                  id="airbnb_address"
+                  value={eventInfo.airbnb_address || ''}
+                  onChange={(e) => setEventInfo({ ...eventInfo, airbnb_address: e.target.value })}
+                  placeholder="123 Mountain Road, Yellowstone, MT 59001"
                   disabled={loading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Will be used for Google Maps link
+                  Full address for navigation (will be used for Google Maps link)
                 </p>
               </div>
 
@@ -254,22 +301,32 @@ export function EventInfoEditorWYSIWYG({ userId }: EventInfoEditorWYSIWYGProps) 
                   onChange={(e) => setEventInfo({ ...eventInfo, house_beds_total: parseInt(e.target.value) || 0 })}
                   disabled={loading}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Guests won't be able to select "house bed" option once this limit is reached
+                </p>
               </div>
             </TabsContent>
 
             {/* Description Tab */}
             <TabsContent value="description" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label>Event Description (appears at top of page)</Label>
-                <Textarea
-                  value={eventInfo.description || ''}
-                  onChange={(e) => setEventInfo({ ...eventInfo, description: e.target.value })}
-                  placeholder="Join us for an epic bachelor party weekend!"
-                  rows={3}
+                <Label>Event Description</Label>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Full description with formatting - add titles, bold text, images, links, and more
+                </p>
+                <RichTextEditor
+                  content={
+                    typeof eventInfo.rich_description === 'string'
+                      ? eventInfo.rich_description
+                      : eventInfo.rich_description?.type === 'doc'
+                      ? '' // Empty string for default JSON structure
+                      : ''
+                  }
+                  onChange={(content) => setEventInfo({ ...eventInfo, rich_description: content })}
                   disabled={loading}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Keep it short and welcoming - appears as subtitle on the info page
+                <p className="text-xs text-muted-foreground mt-2">
+                  This appears in the main content area of the info page with full formatting
                 </p>
               </div>
             </TabsContent>

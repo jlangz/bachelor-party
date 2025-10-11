@@ -6,9 +6,8 @@ import { useAuth } from '@/lib/auth-context';
 import { Navigation } from '@/components/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase, RSVP, AttendanceStatus, SleepingArrangement } from '@/lib/supabase';
+import { supabase, RSVP, AttendanceStatus, SleepingArrangement, EventInfo } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, HelpCircle, Bed, Save } from 'lucide-react';
 
@@ -18,6 +17,8 @@ export default function RSVPPage() {
   const [rsvp, setRsvp] = useState<RSVP | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
+  const [houseBedsClaimed, setHouseBedsClaimed] = useState(0);
 
   const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus>('maybe');
   const [sleepingArrangement, setSleepingArrangement] = useState<SleepingArrangement | null>(null);
@@ -32,8 +33,32 @@ export default function RSVPPage() {
   useEffect(() => {
     if (user) {
       loadRSVP();
+      loadEventInfo();
     }
   }, [user]);
+
+  const loadEventInfo = async () => {
+    try {
+      // Fetch event info
+      const response = await fetch('/api/event-info');
+      if (response.ok) {
+        const data = await response.json();
+        setEventInfo(data);
+      }
+
+      // Count how many beds are claimed
+      const { data: rsvps, error } = await supabase
+        .from('rsvps')
+        .select('sleeping_arrangement')
+        .eq('sleeping_arrangement', 'house_bed');
+
+      if (!error && rsvps) {
+        setHouseBedsClaimed(rsvps.length);
+      }
+    } catch (error) {
+      console.error('Error loading event info:', error);
+    }
+  };
 
   const loadRSVP = async () => {
     if (!user) return;
@@ -114,8 +139,17 @@ export default function RSVPPage() {
     { value: 'no', label: "Can't Make It", icon: XCircle, color: 'border-red-500/50 bg-red-500/10 hover:bg-red-500/20' },
   ];
 
-  const sleepingOptions: { value: SleepingArrangement; label: string; description: string }[] = [
-    { value: 'house_bed', label: 'House Bed', description: 'I want one of the 11 beds (limited availability!)' },
+  const houseBedsFull = eventInfo && houseBedsClaimed >= eventInfo.house_beds_total;
+  const currentUserHasHouseBed = rsvp?.sleeping_arrangement === 'house_bed';
+  const canSelectHouseBed = !houseBedsFull || currentUserHasHouseBed;
+
+  const totalBeds = eventInfo?.house_beds_total || 11;
+  const houseBedDescription = canSelectHouseBed
+    ? `I want one of the ${totalBeds} beds at main AirBnB (${houseBedsClaimed} of ${totalBeds} claimed)`
+    : `All ${totalBeds} beds are claimed - please choose another option`;
+
+  const sleepingOptions: { value: SleepingArrangement; label: string; description: string; disabled?: boolean }[] = [
+    { value: 'house_bed', label: 'House Bed', description: houseBedDescription, disabled: !canSelectHouseBed },
     { value: 'own_place', label: 'Own Accommodation', description: "I'll arrange my own hotel or Airbnb" },
     { value: 'not_staying', label: 'Not Staying Overnight', description: "I'm just joining for the events" },
   ];
@@ -181,18 +215,25 @@ export default function RSVPPage() {
             <CardContent className="space-y-3">
               {sleepingOptions.map((option) => {
                 const isSelected = sleepingArrangement === option.value;
+                const isDisabled = option.disabled;
 
                 return (
                   <button
                     key={option.value}
-                    onClick={() => setSleepingArrangement(option.value)}
+                    onClick={() => !isDisabled && setSleepingArrangement(option.value)}
+                    disabled={isDisabled}
                     className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                      isSelected
+                      isDisabled
+                        ? 'border-border bg-muted/50 opacity-50 cursor-not-allowed'
+                        : isSelected
                         ? 'border-primary bg-primary/10 ring-2 ring-primary'
                         : 'border-border hover:border-primary/50 bg-card'
                     }`}
                   >
-                    <div className="font-semibold mb-1">{option.label}</div>
+                    <div className="font-semibold mb-1">
+                      {option.label}
+                      {isDisabled && ' (Unavailable)'}
+                    </div>
                     <div className="text-sm text-muted-foreground">{option.description}</div>
                   </button>
                 );
@@ -201,7 +242,7 @@ export default function RSVPPage() {
               {sleepingArrangement === 'house_bed' && (
                 <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
                   <p className="text-sm text-yellow-200">
-                    <strong>Note:</strong> Only 2 house beds remain! If you need a bed, please confirm ASAP.
+                    <strong>Note:</strong> AirBnB is mostly filled by the groom, and groomsmen. If you want a bed here, confirm with Jakob.
                   </p>
                 </div>
               )}
@@ -214,7 +255,7 @@ export default function RSVPPage() {
           <CardHeader>
             <CardTitle>Additional Notes</CardTitle>
             <CardDescription>
-              Any dietary restrictions, special requests, or other info we should know?
+              Any notes for the groom/organizers? You can also let us know where you&apos;ll be staying, or other details.
             </CardDescription>
           </CardHeader>
           <CardContent>

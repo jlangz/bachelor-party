@@ -38,7 +38,7 @@ export default function InfoPage() {
     }
   };
 
-  const formatDateRange = (start: string | null, end: string | null) => {
+  const formatDateRange = (start: string | null, end: string | null, startTime?: string | null, endTime?: string | null) => {
     if (!start || !end) return 'Dates TBA';
 
     const startDate = new Date(start);
@@ -46,11 +46,153 @@ export default function InfoPage() {
 
     const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' };
 
+    let dateStr = '';
     if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
-      return `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${endDate.getDate()}, ${endDate.getFullYear()}`;
+      dateStr = `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${endDate.getDate()}, ${endDate.getFullYear()}`;
+    } else {
+      dateStr = `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
     }
 
-    return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+    // Add times if available
+    if (startTime || endTime) {
+      const times: string[] = [];
+      if (startTime) times.push(formatTime(startTime));
+      if (endTime && endTime !== startTime) times.push(formatTime(endTime));
+      if (times.length > 0) {
+        dateStr += ` (${times.join(' - ')})`;
+      }
+    }
+
+    return dateStr;
+  };
+
+  const formatTime = (time: string) => {
+    try {
+      // Handle "HH:MM" or "HH:MM:SS" format
+      const [hours, minutes] = time.split(':').map(Number);
+      const date = new Date();
+      date.setHours(hours, minutes);
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    } catch {
+      return time;
+    }
+  };
+
+  const renderRichDescription = (richDesc: any) => {
+    // Handle both HTML string and TipTap JSON formats
+    if (!richDesc) return null;
+
+    // If it's a string (HTML from editor), render it directly
+    if (typeof richDesc === 'string' && richDesc.trim()) {
+      // Convert multiple <br> tags to empty paragraphs for proper spacing
+      let processedHtml = richDesc;
+      // Replace 2+ consecutive <br> tags with empty <p> tags
+      processedHtml = processedHtml.replace(/(<br\s*\/?>){2,}/gi, (match) => {
+        const count = (match.match(/<br/gi) || []).length;
+        return '<p></p>'.repeat(Math.floor(count / 2));
+      });
+
+      return (
+        <div
+          className="prose prose-invert max-w-none
+                     prose-headings:text-foreground prose-headings:font-bold prose-headings:mt-8 prose-headings:mb-4 first:prose-headings:mt-0
+                     prose-h2:text-2xl prose-h3:text-xl
+                     prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-4
+                     prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                     prose-strong:text-foreground prose-strong:font-semibold
+                     prose-ul:text-muted-foreground prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4 prose-ul:space-y-1
+                     prose-ol:text-muted-foreground prose-ol:list-decimal prose-ol:pl-6 prose-ol:mb-4 prose-ol:space-y-1
+                     prose-li:text-muted-foreground
+                     prose-hr:my-8 prose-hr:border-border
+                     [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
+                     [&_p:empty]:h-6"
+          dangerouslySetInnerHTML={{ __html: processedHtml }}
+        />
+      );
+    }
+
+    // If it's TipTap JSON format, parse it
+    if (richDesc.content && Array.isArray(richDesc.content)) {
+      return (
+        <div className="prose prose-invert max-w-none">
+          {richDesc.content.map((node: any, index: number) => {
+            if (node.type === 'paragraph') {
+              return (
+                <p key={index} className="mb-4 text-muted-foreground">
+                  {node.content?.map((textNode: any, textIndex: number) => {
+                    let text = textNode.text || '';
+                    let element = <span key={textIndex}>{text}</span>;
+
+                    if (textNode.marks) {
+                      textNode.marks.forEach((mark: any) => {
+                        if (mark.type === 'bold') {
+                          element = <strong key={textIndex} className="text-foreground font-bold">{text}</strong>;
+                        } else if (mark.type === 'italic') {
+                          element = <em key={textIndex}>{text}</em>;
+                        } else if (mark.type === 'link') {
+                          element = (
+                            <a key={textIndex} href={mark.attrs?.href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                              {text}
+                            </a>
+                          );
+                        }
+                      });
+                    }
+
+                    return element;
+                  })}
+                </p>
+              );
+            } else if (node.type === 'heading') {
+              const level = node.attrs?.level || 2;
+              const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements;
+              const text = node.content?.map((n: any) => n.text).join('') || '';
+              return (
+                <HeadingTag key={index} className="font-bold mb-3 mt-6 text-foreground">
+                  {text}
+                </HeadingTag>
+              );
+            } else if (node.type === 'bulletList') {
+              return (
+                <ul key={index} className="list-disc pl-6 mb-4 text-muted-foreground">
+                  {node.content?.map((listItem: any, liIndex: number) => (
+                    <li key={liIndex}>
+                      {listItem.content?.map((p: any) =>
+                        p.content?.map((t: any) => t.text).join('')
+                      ).join('')}
+                    </li>
+                  ))}
+                </ul>
+              );
+            } else if (node.type === 'orderedList') {
+              return (
+                <ol key={index} className="list-decimal pl-6 mb-4 text-muted-foreground">
+                  {node.content?.map((listItem: any, liIndex: number) => (
+                    <li key={liIndex}>
+                      {listItem.content?.map((p: any) =>
+                        p.content?.map((t: any) => t.text).join('')
+                      ).join('')}
+                    </li>
+                  ))}
+                </ol>
+              );
+            } else if (node.type === 'image') {
+              return (
+                <img
+                  key={index}
+                  src={node.attrs?.src}
+                  alt={node.attrs?.alt || ''}
+                  className="rounded-lg my-4 max-w-full h-auto"
+                />
+              );
+            }
+            return null;
+          })}
+        </div>
+      );
+    }
+
+    return null;
   };
 
   if (isLoading || loading) {
@@ -86,13 +228,18 @@ export default function InfoPage() {
           <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
             {eventInfo.event_name}
           </h1>
-          {eventInfo.description && (
+          {eventInfo.short_description && (
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              {eventInfo.description}
+              {eventInfo.short_description}
             </p>
           )}
           <p className="text-lg text-muted-foreground mt-2">
-            {formatDateRange(eventInfo.event_date_start, eventInfo.event_date_end)}
+            {formatDateRange(
+              eventInfo.event_date_start,
+              eventInfo.event_date_end,
+              eventInfo.event_date_start_time,
+              eventInfo.event_date_end_time
+            )}
           </p>
         </div>
 
@@ -106,7 +253,12 @@ export default function InfoPage() {
               </div>
               <h3 className="font-semibold mb-2">When</h3>
               <p className="text-sm text-muted-foreground">
-                {formatDateRange(eventInfo.event_date_start, eventInfo.event_date_end)}
+                {formatDateRange(
+                  eventInfo.event_date_start,
+                  eventInfo.event_date_end,
+                  eventInfo.event_date_start_time,
+                  eventInfo.event_date_end_time
+                )}
               </p>
             </CardContent>
           </Card>
@@ -121,13 +273,18 @@ export default function InfoPage() {
               <p className="text-sm text-muted-foreground">
                 {eventInfo.location_name || 'Location TBA'}
               </p>
-              {eventInfo.location_address && (
+              {eventInfo.airbnb_house_name && (
+                <p className="text-sm font-medium text-primary mt-2">
+                  {eventInfo.airbnb_house_name}
+                </p>
+              )}
+              {eventInfo.airbnb_address && (
                 <>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {eventInfo.location_address}
+                    {eventInfo.airbnb_address}
                   </p>
                   <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventInfo.location_address)}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventInfo.airbnb_address)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:underline text-xs mt-2 inline-block"
@@ -146,6 +303,11 @@ export default function InfoPage() {
                 <Home className="w-6 h-6 text-primary" />
               </div>
               <h3 className="font-semibold mb-2">Accommodations</h3>
+              {eventInfo.airbnb_house_name && (
+                <p className="text-sm font-medium mb-1">
+                  {eventInfo.airbnb_house_name}
+                </p>
+              )}
               <p className="text-sm text-muted-foreground">
                 {eventInfo.house_beds_total} beds available
               </p>
@@ -155,6 +317,35 @@ export default function InfoPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Rich Description Section */}
+        {eventInfo.rich_description && (
+          <Card className="mb-12 bg-card/50 backdrop-blur border-border/50">
+            <CardContent className="p-8">
+              <style jsx>{`
+                .tiptap-content br {
+                  content: "";
+                  display: block;
+                  margin: 0.5em 0;
+                  line-height: 1.5em;
+                }
+                .tiptap-content hr {
+                  margin: 2rem 0;
+                  border-color: rgb(39 39 42);
+                }
+                .tiptap-content p {
+                  margin-bottom: 1.5em;
+                }
+                .tiptap-content p:empty {
+                  margin-bottom: 1.5em;
+                }
+              `}</style>
+              <div className="tiptap-content">
+                {renderRichDescription(eventInfo.rich_description)}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Schedule */}
         {eventInfo.schedule && eventInfo.schedule.length > 0 && (
