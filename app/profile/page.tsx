@@ -8,14 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { displayPhoneNumber, updateUserName } from '@/lib/auth-utils';
+import { displayPhoneNumber, updateUserProfile } from '@/lib/auth-utils';
 import { toast } from 'sonner';
-import { User, Save, Phone } from 'lucide-react';
+import { User, Save, Phone, Mail } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, setUser, isLoading } = useAuth();
   const router = useRouter();
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       setName(user.name);
+      setEmail(user.email || '');
     }
   }, [user]);
 
@@ -36,12 +38,14 @@ export default function ProfilePage() {
     if (!user) return;
 
     const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+
     if (!trimmedName) {
       toast.error('Name cannot be empty');
       return;
     }
 
-    if (trimmedName === user.name) {
+    if (trimmedName === user.name && trimmedEmail === (user.email || '')) {
       toast.info('No changes to save');
       return;
     }
@@ -49,16 +53,20 @@ export default function ProfilePage() {
     setSaving(true);
 
     try {
-      const { user: updatedUser, error } = await updateUserName(user.id, trimmedName);
+      const { user: updatedUser, error } = await updateUserProfile(
+        user.id,
+        trimmedName,
+        trimmedEmail || null
+      );
 
       if (error) {
         toast.error(error);
       } else if (updatedUser) {
         setUser(updatedUser);
-        toast.success('Name updated successfully!');
+        toast.success('Profile updated successfully!');
       }
     } catch (error) {
-      console.error('Error updating name:', error);
+      console.error('Error updating profile:', error);
       toast.error('Something went wrong. Please try again.');
     } finally {
       setSaving(false);
@@ -120,7 +128,7 @@ export default function ProfilePage() {
               </p>
             </div>
 
-            {/* Name (Editable) */}
+            {/* Name and Email (Editable) */}
             <form onSubmit={handleSave} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Your Name</Label>
@@ -138,10 +146,28 @@ export default function ProfilePage() {
                 </p>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Email Address (Optional)
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your.email@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={saving}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Your email will only be visible to organizers
+                </p>
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   type="submit"
-                  disabled={saving || name.trim() === user.name}
+                  disabled={saving || (name.trim() === user.name && email.trim() === (user.email || ''))}
                   className="flex-1"
                 >
                   <Save className="w-4 h-4 mr-2" />

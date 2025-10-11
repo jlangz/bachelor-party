@@ -20,6 +20,7 @@ export type User = {
   role: UserRole;
   invited_by: string;
   title?: string | null;
+  email?: string | null;
   created_at: string;
 };
 

@@ -138,3 +138,49 @@ export async function updateUserName(
     return { user: null, error: 'An unexpected error occurred. Please try again.' };
   }
 }
+
+// Validate email format
+export function isValidEmail(email: string): boolean {
+  if (!email || email.trim().length === 0) {
+    return true; // Email is optional
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email.trim());
+}
+
+// Update user profile (name and email)
+export async function updateUserProfile(
+  userId: string,
+  newName: string,
+  newEmail?: string | null
+): Promise<{ user: User | null; error: string | null }> {
+  const trimmedName = newName.trim();
+  const trimmedEmail = newEmail?.trim() || null;
+
+  if (!trimmedName || trimmedName.length === 0) {
+    return { user: null, error: 'Name cannot be empty' };
+  }
+
+  if (trimmedEmail && !isValidEmail(trimmedEmail)) {
+    return { user: null, error: 'Please enter a valid email address' };
+  }
+
+  try {
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update({ name: trimmedName, email: trimmedEmail })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating user profile:', updateError);
+      return { user: null, error: 'Failed to update profile. Please try again.' };
+    }
+
+    return { user: updatedUser, error: null };
+  } catch (error) {
+    console.error('Unexpected error updating profile:', error);
+    return { user: null, error: 'An unexpected error occurred. Please try again.' };
+  }
+}
