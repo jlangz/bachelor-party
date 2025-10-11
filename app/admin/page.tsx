@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Navigation } from '@/components/navigation';
@@ -13,6 +13,7 @@ import { displayPhoneNumber } from '@/lib/auth-utils';
 import { toast } from 'sonner';
 import { Shield, Users, Bed, Trophy, Download, Lock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { InvitedUsersManager } from '@/components/invited-users-manager';
 
 type UserWithDetails = User & {
   rsvp?: RSVP;
@@ -28,80 +29,7 @@ export default function AdminPage() {
   const [checkingAuth, setCheckingAuth] = useState(false);
   const [users, setUsers] = useState<UserWithDetails[]>([]);
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/');
-    }
-  }, [user, isLoading, router]);
-
-  useEffect(() => {
-    // Check if already authenticated via server session
-    checkAuthentication();
-  }, []);
-
-  const checkAuthentication = async () => {
-    setCheckingAuth(true);
-    try {
-      const response = await fetch('/api/admin/verify');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.authenticated) {
-          setIsAuthenticated(true);
-          loadAllData();
-        } else {
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('Auth check error:', error);
-      setLoading(false);
-    } finally {
-      setCheckingAuth(false);
-    }
-  };
-
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCheckingAuth(true);
-
-    try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setIsAuthenticated(true);
-        toast.success('Access granted');
-        loadAllData();
-      } else {
-        toast.error(data.error || 'Incorrect password');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      toast.error('An error occurred. Please try again.');
-    } finally {
-      setCheckingAuth(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/admin/logout', { method: 'POST' });
-      setIsAuthenticated(false);
-      setPassword('');
-      toast.success('Logged out');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -149,6 +77,82 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const checkAuthentication = useCallback(async () => {
+    setCheckingAuth(true);
+    try {
+      const response = await fetch('/api/admin/verify');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+          loadAllData();
+        } else {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setLoading(false);
+    } finally {
+      setCheckingAuth(false);
+    }
+  }, [loadAllData]);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/');
+    } else if (!isLoading && user && user.role !== 'admin') {
+      toast.error('You do not have admin access');
+      router.push('/dashboard');
+    }
+  }, [user, isLoading, router]);
+
+  useEffect(() => {
+    // Check if already authenticated via server session
+    checkAuthentication();
+  }, [checkAuthentication]);
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCheckingAuth(true);
+
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setIsAuthenticated(true);
+        toast.success('Access granted');
+        loadAllData();
+      } else {
+        toast.error(data.error || 'Incorrect password');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      setIsAuthenticated(false);
+      setPassword('');
+      toast.success('Logged out');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const exportToCSV = () => {
@@ -195,7 +199,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!user) {
+  if (!user || user.role !== 'admin') {
     return null;
   }
 
@@ -347,6 +351,11 @@ export default function AdminPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Invited Users Manager */}
+        <div className="mb-8">
+          <InvitedUsersManager />
         </div>
 
         {/* Detailed List */}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { loginOrCreateUser, formatPhoneNumber, displayPhoneNumber } from '@/lib/auth-utils';
+import { loginOrCreateUser, formatPhoneNumber, displayPhoneNumber, isValidPhoneNumber } from '@/lib/auth-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,8 +32,8 @@ export default function Home() {
     if (isSubmitting) return;
 
     const formatted = formatPhoneNumber(phoneNumber);
-    if (formatted.length !== 10) {
-      toast.error('Please enter a valid 10-digit phone number');
+    if (!isValidPhoneNumber(formatted)) {
+      toast.error('Please enter a valid phone number (US: 10 digits, Norwegian: 8 digits)');
       return;
     }
 
@@ -157,9 +157,9 @@ export default function Home() {
                     autoFocus
                   />
                   <p className="text-xs text-muted-foreground">
-                    {phoneNumber && formatPhoneNumber(phoneNumber).length === 10
+                    {phoneNumber && isValidPhoneNumber(phoneNumber)
                       ? `Formatted: ${displayPhoneNumber(phoneNumber)}`
-                      : 'Enter 10 digits'}
+                      : 'Enter US (10 digits) or Norwegian (8 digits) number'}
                   </p>
                 </div>
                 <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>

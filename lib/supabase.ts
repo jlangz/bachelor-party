@@ -11,10 +11,13 @@ if (typeof window !== 'undefined' && (!process.env.NEXT_PUBLIC_SUPABASE_URL || !
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Types for our database
+export type UserRole = 'admin' | 'guest';
+
 export type User = {
   id: string;
   phone_number: string;
   name: string;
+  role: UserRole;
   created_at: string;
 };
 
@@ -39,4 +42,12 @@ export type ActivitySignup = {
   activity_type: ActivityType;
   participation_level: ParticipationLevel;
   updated_at: string;
+};
+
+export type InvitedUser = {
+  id: string;
+  phone_number: string;
+  name: string;
+  invited_by: string;
+  created_at: string;
 };

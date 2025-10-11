@@ -8,7 +8,7 @@ import { Navigation } from '@/components/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase, RSVP, ActivitySignup } from '@/lib/supabase';
-import { Calendar, Bed, Trophy, Info, ArrowRight, MapPin, Clock } from 'lucide-react';
+import { Calendar, Bed, Trophy, Info, ArrowRight, MapPin, Clock, User, Users } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, isLoading } = useAuth();
@@ -216,7 +216,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Links */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* Event Info */}
           <Card className="hover:border-primary/50 transition-colors">
             <CardHeader>
@@ -272,6 +272,41 @@ export default function Dashboard() {
                 <Button className="w-full" variant="outline">
                   <Trophy className="mr-2 h-4 w-4" />
                   Manage Activities
+                </Button>
+              </Link>
+              <Link href="/profile">
+                <Button className="w-full" variant="outline">
+                  <User className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Directory */}
+          <Card className="hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Attendee Directory
+              </CardTitle>
+              <CardDescription>
+                View contact info and details for all guests
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-start gap-2">
+                  <Users className="w-4 h-4 mt-0.5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Connect with guests</p>
+                    <p className="text-xs text-muted-foreground">See who's coming and how to reach them</p>
+                  </div>
+                </div>
+              </div>
+              <Link href="/directory">
+                <Button className="w-full">
+                  View Directory <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </CardContent>
