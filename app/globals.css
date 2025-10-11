@@ -123,3 +123,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Cursor styles for interactive elements */
+a,
+button,
+[role="button"],
+[type="button"],
+[type="submit"],
+[type="reset"],
+label[for],
+select {
+  cursor: pointer !important;
+}
+
+button:disabled,
+a[disabled],
+[role="button"][disabled],
+[aria-disabled="true"] {
+  cursor: not-allowed !important;
+}
