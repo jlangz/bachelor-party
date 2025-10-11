@@ -323,7 +323,6 @@ export function EventInfoEditorWYSIWYG({ userId }: EventInfoEditorWYSIWYGProps) 
                       : ''
                   }
                   onChange={(content) => setEventInfo({ ...eventInfo, rich_description: content })}
-                  disabled={loading}
                 />
                 <p className="text-xs text-muted-foreground mt-2">
                   This appears in the main content area of the info page with full formatting
@@ -391,7 +390,7 @@ export function EventInfoEditorWYSIWYG({ userId }: EventInfoEditorWYSIWYGProps) 
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
-                  No schedule items. Click "Add Item" to create one.
+                  No schedule items. Click &quot;Add Item&quot; to create one.
                 </p>
               )}
             </TabsContent>
@@ -446,7 +445,7 @@ export function EventInfoEditorWYSIWYG({ userId }: EventInfoEditorWYSIWYGProps) 
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
-                  No info sections. Click "Add Section" to create one.
+                  No info sections. Click &quot;Add Section&quot; to create one.
                 </p>
               )}
             </TabsContent>

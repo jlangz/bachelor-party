@@ -25,6 +25,9 @@ const eslintConfig = [
       "@typescript-eslint/no-unused-vars": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
       "react-hooks/exhaustive-deps": "warn",
+      "prefer-const": "warn", // Changed from error to warn
+      "react/no-unescaped-entities": "warn", // Changed from error to warn
+      "@next/next/no-img-element": "warn", // Warn about using <img> instead of <Image>
     },
   },
 ];

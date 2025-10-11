@@ -4,12 +4,12 @@ import { supabase } from '@/lib/supabase';
 // PUT - Update activity (admin only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json();
     const { userId, ...activityData } = body;
-    const { id } = params;
+    const { id } = await params;
 
     if (!userId) {
       return NextResponse.json(
@@ -61,12 +61,12 @@ export async function PUT(
 // DELETE - Delete activity (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    const { id } = params;
+    const { id } = await params;
 
     if (!userId) {
       return NextResponse.json(

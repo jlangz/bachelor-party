@@ -356,7 +356,7 @@ export default function Dashboard() {
                   <Users className="w-4 h-4 mt-0.5 text-primary" />
                   <div>
                     <p className="text-sm font-medium">Connect with guests</p>
-                    <p className="text-xs text-muted-foreground">See who's coming and how to reach them</p>
+                    <p className="text-xs text-muted-foreground">See who&apos;s coming and how to reach them</p>
                   </div>
                 </div>
               </div>

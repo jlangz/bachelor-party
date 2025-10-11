@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Navigation } from '@/components/navigation';
@@ -120,7 +120,7 @@ export default function InfoPage() {
               return (
                 <p key={index} className="mb-4 text-muted-foreground">
                   {node.content?.map((textNode: any, textIndex: number) => {
-                    let text = textNode.text || '';
+                    const text = textNode.text || '';
                     let element = <span key={textIndex}>{text}</span>;
 
                     if (textNode.marks) {
@@ -145,7 +145,7 @@ export default function InfoPage() {
               );
             } else if (node.type === 'heading') {
               const level = node.attrs?.level || 2;
-              const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements;
+              const HeadingTag = `h${level}` as keyof React.JSX.IntrinsicElements;
               const text = node.content?.map((n: any) => n.text).join('') || '';
               return (
                 <HeadingTag key={index} className="font-bold mb-3 mt-6 text-foreground">
