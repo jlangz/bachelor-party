@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 import { Shield, Users, Bed, Trophy, Download, Lock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InvitedUsersManager } from '@/components/invited-users-manager';
+import { EventInfoEditorWYSIWYG } from '@/components/event-info-editor-wysiwyg';
+import { ActivitiesManagerEnhanced } from '@/components/activities-manager-enhanced';
 
 type UserWithDetails = User & {
   rsvp?: RSVP;
@@ -124,7 +126,7 @@ export default function AdminPage() {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, userId: user?.id }),
       });
 
       const data = await response.json();
@@ -353,112 +355,134 @@ export default function AdminPage() {
           </Card>
         </div>
 
-        {/* Invited Users Manager */}
-        <div className="mb-8">
-          <InvitedUsersManager />
-        </div>
+        {/* Main Tabs */}
+        <Tabs defaultValue="rsvps" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="rsvps">RSVPs</TabsTrigger>
+            <TabsTrigger value="guests">Guests</TabsTrigger>
+            <TabsTrigger value="activities">Activities</TabsTrigger>
+            <TabsTrigger value="event">Event Info</TabsTrigger>
+          </TabsList>
 
-        {/* Detailed List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Attendees</CardTitle>
-            <CardDescription>
-              Complete list of registered users and their responses
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <Tabs defaultValue="all" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="all">All ({users.length})</TabsTrigger>
-                  <TabsTrigger value="attending">Attending ({stats.attending})</TabsTrigger>
-                  <TabsTrigger value="maybe">Maybe ({stats.maybe})</TabsTrigger>
-                  <TabsTrigger value="no">Not Coming ({stats.notAttending})</TabsTrigger>
-                </TabsList>
+          {/* RSVPs Tab */}
+          <TabsContent value="rsvps" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>All Attendees</CardTitle>
+                <CardDescription>
+                  Complete list of registered users and their responses
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  <Tabs defaultValue="all" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="all">All ({users.length})</TabsTrigger>
+                      <TabsTrigger value="attending">Attending ({stats.attending})</TabsTrigger>
+                      <TabsTrigger value="maybe">Maybe ({stats.maybe})</TabsTrigger>
+                      <TabsTrigger value="no">Not Coming ({stats.notAttending})</TabsTrigger>
+                    </TabsList>
 
-                {['all', 'attending', 'maybe', 'no'].map((tab) => {
-                  let filteredUsers = users;
-                  if (tab === 'attending') filteredUsers = users.filter((u) => u.rsvp?.attendance_status === 'yes');
-                  if (tab === 'maybe') filteredUsers = users.filter((u) => u.rsvp?.attendance_status === 'maybe');
-                  if (tab === 'no') filteredUsers = users.filter((u) => u.rsvp?.attendance_status === 'no');
+                    {['all', 'attending', 'maybe', 'no'].map((tab) => {
+                      let filteredUsers = users;
+                      if (tab === 'attending') filteredUsers = users.filter((u) => u.rsvp?.attendance_status === 'yes');
+                      if (tab === 'maybe') filteredUsers = users.filter((u) => u.rsvp?.attendance_status === 'maybe');
+                      if (tab === 'no') filteredUsers = users.filter((u) => u.rsvp?.attendance_status === 'no');
 
-                  return (
-                    <TabsContent key={tab} value={tab} className="space-y-4 mt-4">
-                      {filteredUsers.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8">No users in this category</p>
-                      ) : (
-                        filteredUsers.map((u) => {
-                          const shooting = u.activities?.find((a) => a.activity_type === 'shooting');
-                          const show = u.activities?.find((a) => a.activity_type === 'show');
+                      return (
+                        <TabsContent key={tab} value={tab} className="space-y-4 mt-4">
+                          {filteredUsers.length === 0 ? (
+                            <p className="text-center text-muted-foreground py-8">No users in this category</p>
+                          ) : (
+                            filteredUsers.map((u) => {
+                              const shooting = u.activities?.find((a) => a.activity_type === 'shooting');
+                              const show = u.activities?.find((a) => a.activity_type === 'show');
 
-                          return (
-                            <div key={u.id} className="border border-border rounded-lg p-4">
-                              <div className="flex items-start justify-between mb-2">
-                                <div>
-                                  <h3 className="font-semibold text-lg">{u.name}</h3>
-                                  <p className="text-sm text-muted-foreground">
-                                    {displayPhoneNumber(u.phone_number)}
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <span
-                                    className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                      u.rsvp?.attendance_status === 'yes'
-                                        ? 'bg-green-500/20 text-green-400'
-                                        : u.rsvp?.attendance_status === 'maybe'
-                                        ? 'bg-yellow-500/20 text-yellow-400'
-                                        : u.rsvp?.attendance_status === 'no'
-                                        ? 'bg-red-500/20 text-red-400'
-                                        : 'bg-gray-500/20 text-gray-400'
-                                    }`}
-                                  >
-                                    {u.rsvp?.attendance_status || 'not set'}
-                                  </span>
-                                </div>
-                              </div>
+                              return (
+                                <div key={u.id} className="border border-border rounded-lg p-4">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div>
+                                      <h3 className="font-semibold text-lg">{u.name}</h3>
+                                      <p className="text-sm text-muted-foreground">
+                                        {displayPhoneNumber(u.phone_number)}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <span
+                                        className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                          u.rsvp?.attendance_status === 'yes'
+                                            ? 'bg-green-500/20 text-green-400'
+                                            : u.rsvp?.attendance_status === 'maybe'
+                                            ? 'bg-yellow-500/20 text-yellow-400'
+                                            : u.rsvp?.attendance_status === 'no'
+                                            ? 'bg-red-500/20 text-red-400'
+                                            : 'bg-gray-500/20 text-gray-400'
+                                        }`}
+                                      >
+                                        {u.rsvp?.attendance_status || 'not set'}
+                                      </span>
+                                    </div>
+                                  </div>
 
-                              <div className="grid sm:grid-cols-3 gap-3 text-sm">
-                                <div>
-                                  <p className="text-muted-foreground">Sleeping:</p>
-                                  <p className="font-medium">
-                                    {u.rsvp?.sleeping_arrangement?.replace('_', ' ') || 'not set'}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-muted-foreground">Shooting:</p>
-                                  <p className="font-medium">
-                                    {shooting?.participation_level?.replace('_', ' ') || 'not set'}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-muted-foreground">Show:</p>
-                                  <p className="font-medium">
-                                    {show?.participation_level?.replace('_', ' ') || 'not set'}
-                                  </p>
-                                </div>
-                              </div>
+                                  <div className="grid sm:grid-cols-3 gap-3 text-sm">
+                                    <div>
+                                      <p className="text-muted-foreground">Sleeping:</p>
+                                      <p className="font-medium">
+                                        {u.rsvp?.sleeping_arrangement?.replace('_', ' ') || 'not set'}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground">Shooting:</p>
+                                      <p className="font-medium">
+                                        {shooting?.participation_level?.replace('_', ' ') || 'not set'}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground">Show:</p>
+                                      <p className="font-medium">
+                                        {show?.participation_level?.replace('_', ' ') || 'not set'}
+                                      </p>
+                                    </div>
+                                  </div>
 
-                              {u.rsvp?.notes && (
-                                <div className="mt-3 pt-3 border-t border-border">
-                                  <p className="text-xs text-muted-foreground mb-1">Notes:</p>
-                                  <p className="text-sm">{u.rsvp.notes}</p>
+                                  {u.rsvp?.notes && (
+                                    <div className="mt-3 pt-3 border-t border-border">
+                                      <p className="text-xs text-muted-foreground mb-1">Notes:</p>
+                                      <p className="text-sm">{u.rsvp.notes}</p>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                    </TabsContent>
-                  );
-                })}
-              </Tabs>
-            )}
-          </CardContent>
-        </Card>
+                              );
+                            })
+                          )}
+                        </TabsContent>
+                      );
+                    })}
+                  </Tabs>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Invited Guests Tab */}
+          <TabsContent value="guests">
+            <InvitedUsersManager />
+          </TabsContent>
+
+          {/* Activities Management Tab */}
+          <TabsContent value="activities">
+            <ActivitiesManagerEnhanced userId={user?.id || ''} />
+          </TabsContent>
+
+          {/* Event Info Tab */}
+          <TabsContent value="event">
+            <EventInfoEditorWYSIWYG userId={user?.id || ''} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

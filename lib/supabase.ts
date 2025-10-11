@@ -18,6 +18,8 @@ export type User = {
   phone_number: string;
   name: string;
   role: UserRole;
+  invited_by: string;
+  title?: string | null;
   created_at: string;
 };
 
@@ -39,7 +41,8 @@ export type ParticipationLevel = 'participating' | 'watching' | 'not_attending';
 export type ActivitySignup = {
   id: string;
   user_id: string;
-  activity_type: ActivityType;
+  activity_type: ActivityType; // Kept for backward compatibility
+  activity_id: string | null; // New: references activities table
   participation_level: ParticipationLevel;
   updated_at: string;
 };
@@ -50,4 +53,64 @@ export type InvitedUser = {
   name: string;
   invited_by: string;
   created_at: string;
+};
+
+export type AdminPassword = {
+  id: string;
+  user_id: string;
+  password_hash: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ScheduleItem = {
+  time: string;
+  title: string;
+  description: string;
+};
+
+export type ImportantInfoItem = {
+  title: string;
+  content: string;
+};
+
+export type EventInfo = {
+  id: string;
+  event_name: string;
+  event_date_start: string | null;
+  event_date_end: string | null;
+  location_name: string | null;
+  location_address: string | null;
+  description: string | null;
+  house_beds_total: number;
+  additional_info: Record<string, any>;
+  updated_at: string;
+  updated_by: string | null;
+  // Enhanced fields
+  rich_description: any; // TipTap/Lexical JSON
+  schedule: ScheduleItem[];
+  important_info: ImportantInfoItem[];
+};
+
+export type ActivityTypeCategory = 'participatory' | 'spectator' | 'mixed';
+
+export type Activity = {
+  id: string;
+  name: string;
+  description: string | null;
+  activity_type: ActivityTypeCategory;
+  participation_options: string[];
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+  // Enhanced fields
+  icon: string;
+  when_datetime: string | null;
+  when_description: string | null;
+  cost: number | null;
+  cost_description: string | null;
+  location: string | null;
+  additional_notes: string | null;
 };

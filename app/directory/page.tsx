@@ -238,7 +238,14 @@ export default function DirectoryPage() {
                               <Users className="w-5 h-5 text-primary" />
                             </div>
                             <div>
-                              <h3 className="font-semibold text-lg">{u.name}</h3>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-lg">{u.name}</h3>
+                                {u.title && (
+                                  <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-primary/20 text-primary">
+                                    {u.title}
+                                  </span>
+                                )}
+                              </div>
                               <a
                                 href={`tel:${u.phone_number}`}
                                 className="text-sm text-primary hover:underline flex items-center gap-1"

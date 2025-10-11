@@ -1,15 +1,18 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Navigation } from '@/components/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Calendar, Bed, DollarSign, Target, Theater, Plane, Clock, AlertCircle } from 'lucide-react';
+import { MapPin, Calendar, Home, Info } from 'lucide-react';
+import { EventInfo } from '@/lib/supabase';
 
 export default function InfoPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -17,9 +20,42 @@ export default function InfoPage() {
     }
   }, [user, isLoading, router]);
 
-  if (isLoading) {
+  useEffect(() => {
+    fetchEventInfo();
+  }, []);
+
+  const fetchEventInfo = async () => {
+    try {
+      const response = await fetch('/api/event-info');
+      if (response.ok) {
+        const data = await response.json();
+        setEventInfo(data);
+      }
+    } catch (error) {
+      console.error('Error fetching event info:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDateRange = (start: string | null, end: string | null) => {
+    if (!start || !end) return 'Dates TBA';
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' };
+
+    if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
+      return `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${endDate.getDate()}, ${endDate.getFullYear()}`;
+    }
+
+    return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+  };
+
+  if (isLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
@@ -29,258 +65,152 @@ export default function InfoPage() {
     return null;
   }
 
+  if (!eventInfo) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <p className="text-center text-muted-foreground">Event information not available</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
       <Navigation />
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-5xl font-bold mb-2 text-primary">
-            Jakob&apos;s Bachelor Weekend
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Hero Section */}
+        <div className="mb-12 text-center">
+          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            {eventInfo.event_name}
           </h1>
-          <p className="text-2xl text-muted-foreground">Las Vegas, Nov 14–16</p>
+          {eventInfo.description && (
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              {eventInfo.description}
+            </p>
+          )}
+          <p className="text-lg text-muted-foreground mt-2">
+            {formatDateRange(eventInfo.event_date_start, eventInfo.event_date_end)}
+          </p>
         </div>
 
-        {/* Location Card */}
-        <Card className="mb-6 border-primary/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl">
-              <MapPin className="w-6 h-6 text-primary" />
-              The House
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-lg font-semibold mb-2">Address:</p>
-              <p className="text-xl text-primary">7340 South Ullom Drive</p>
-              <p className="text-xl text-primary mb-3">Las Vegas, NV 89139</p>
-              <a
-                href="https://www.google.com/maps/search/?api=1&query=7340+South+Ullom+Drive+Las+Vegas+NV+89139"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline inline-flex items-center gap-1"
-              >
-                Open in Google Maps →
-              </a>
-            </div>
-
-            <div className="border-t border-border pt-4">
-              <div className="flex items-start gap-3">
-                <Bed className="w-5 h-5 mt-1 text-primary" />
-                <div>
-                  <p className="font-semibold mb-1">Sleeping Arrangements:</p>
-                  <ul className="space-y-1 text-muted-foreground">
-                    <li>• 11 beds total, 9 already claimed</li>
-                    <li>• Can accommodate up to 16 people if we get cozy</li>
-                    <li>• Want a guaranteed bed? Let us know ASAP!</li>
-                    <li>• Out of space? Join the events anyway! Grab a hotel or Airbnb nearby</li>
-                  </ul>
-                </div>
+        {/* Key Info Cards */}
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
+          {/* Dates */}
+          <Card className="bg-card/50 backdrop-blur border-border/50">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-6 h-6 text-primary" />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              <h3 className="font-semibold mb-2">When</h3>
+              <p className="text-sm text-muted-foreground">
+                {formatDateRange(eventInfo.event_date_start, eventInfo.event_date_end)}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Location */}
+          <Card className="bg-card/50 backdrop-blur border-border/50">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <MapPin className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="font-semibold mb-2">Where</h3>
+              <p className="text-sm text-muted-foreground">
+                {eventInfo.location_name || 'Location TBA'}
+              </p>
+              {eventInfo.location_address && (
+                <>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {eventInfo.location_address}
+                  </p>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventInfo.location_address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline text-xs mt-2 inline-block"
+                  >
+                    Open in Google Maps →
+                  </a>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Accommodations */}
+          <Card className="bg-card/50 backdrop-blur border-border/50">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Home className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="font-semibold mb-2">Accommodations</h3>
+              <p className="text-sm text-muted-foreground">
+                {eventInfo.house_beds_total} beds available
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                First come, first served
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Schedule */}
-        <div className="space-y-6 mb-8">
-          {/* Friday */}
-          <Card className="border-l-4 border-l-primary">
+        {eventInfo.schedule && eventInfo.schedule.length > 0 && (
+          <Card className="mb-12 bg-card/50 backdrop-blur border-border/50">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Calendar className="w-5 h-5 text-primary" />
-                Friday – Arrival & Night Out
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-start gap-3">
-                <Plane className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
-                <div>
-                  <p className="font-medium">Afternoon Arrival</p>
-                  <p className="text-sm text-muted-foreground">
-                    Most people rolling in Friday afternoon
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
-                <div>
-                  <p className="font-medium">Evening Kickoff</p>
-                  <p className="text-sm text-muted-foreground">
-                    Get-together at the house before heading to the Strip
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Theater className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
-                <div>
-                  <p className="font-medium">Night on the Town</p>
-                  <p className="text-sm text-muted-foreground">
-                    Drinks, food, hangout, then out for a night in Vegas (bars, gambling, maybe a club)
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Saturday */}
-          <Card className="border-l-4 border-l-primary">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Calendar className="w-5 h-5 text-primary" />
-                Saturday – Action Day
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Target className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-lg">Morning: Shooting Range</p>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Breakfast at the house, then we&apos;re going shooting
-                  </p>
-                  <div className="bg-accent/50 p-3 rounded-lg space-y-1">
-                    <p className="text-sm">
-                      <span className="font-medium text-primary">Cost:</span> $100–150 if you want to shoot
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Just want to watch? No problem, no cost!
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Let us know if you&apos;re in so we can book for you
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-4">
-                <div className="flex items-start gap-3">
-                  <Theater className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
-                  <div>
-                    <p className="font-medium text-lg">Evening: The Empire Strips Back</p>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Star Wars burlesque parody show - it&apos;s legendary!
-                    </p>
-                    <div className="bg-accent/50 p-3 rounded-lg space-y-1">
-                      <p className="text-sm">
-                        <span className="font-medium text-primary">Cost:</span> $50–80 depending on seats
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        If you&apos;re in, let us know so we can book and keep everyone together
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-4">
-                <p className="font-medium">After the Show:</p>
-                <p className="text-sm text-muted-foreground">
-                  Dinner and another night out — casinos, drinks, whatever happens in Vegas!
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Sunday */}
-          <Card className="border-l-4 border-l-primary">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Calendar className="w-5 h-5 text-primary" />
-                Sunday – Wrap-up
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Calendar className="w-6 h-6 text-primary" />
+                Schedule
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-start gap-3">
-                <Plane className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
-                <div>
-                  <p className="font-medium">Checkout at 11am</p>
-                  <p className="text-sm text-muted-foreground">
-                    Pack up and head back to Phoenix around 11am
-                  </p>
-                </div>
+              <div className="space-y-6">
+                {eventInfo.schedule.map((item, index) => (
+                  <div key={index} className="flex gap-6">
+                    <div className="flex-shrink-0 w-32 text-right">
+                      <span className="text-sm font-medium text-primary">
+                        {item.time}
+                      </span>
+                    </div>
+                    <div className="relative flex-1 pb-6 border-l-2 border-border pl-6 last:pb-0">
+                      <div className="absolute left-0 top-0 w-3 h-3 rounded-full bg-primary -translate-x-[7px]"></div>
+                      <h3 className="font-semibold mb-1">{item.title}</h3>
+                      <p className="text-sm text-muted-foreground whitespace-pre-line">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
-        </div>
+        )}
 
-        {/* Important Notes */}
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-destructive" />
-              A Few Important Notes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              <p className="text-sm">
-                We&apos;re juggling a big group, so expect some splitting up here and there, but hopefully we stick together most of the time
-              </p>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              <p className="text-sm">
-                If you only want to join part of the weekend (just the shooting, just the show, etc.), that&apos;s totally fine — just let us know what you&apos;re in for
-              </p>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              <p className="text-sm font-semibold">
-                Please confirm by October 15th so we can book everything and sort sleeping arrangements
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Summary */}
-        <Card className="mt-8 bg-primary/10 border-primary/50">
-          <CardHeader>
-            <CardTitle>TL;DR</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 mt-1 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">Location</p>
-                    <p className="text-xs text-muted-foreground">Las Vegas, Nov 14–16</p>
+        {/* Important Information */}
+        {eventInfo.important_info && eventInfo.important_info.length > 0 && (
+          <Card className="bg-card/50 backdrop-blur border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Info className="w-6 h-6 text-primary" />
+                Important Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                {eventInfo.important_info.map((item, index) => (
+                  <div key={index} className="space-y-2">
+                    <h3 className="font-semibold text-primary">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {item.content}
+                    </p>
                   </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Bed className="w-4 h-4 mt-1 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">The House</p>
-                    <p className="text-xs text-muted-foreground">7340 S Ullom Dr — 11 beds, 9 taken</p>
-                  </div>
-                </div>
+                ))}
               </div>
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <Target className="w-4 h-4 mt-1 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">Shooting</p>
-                    <p className="text-xs text-muted-foreground">Saturday morning ($100–150)</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Theater className="w-4 h-4 mt-1 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">Empire Strips Back</p>
-                    <p className="text-xs text-muted-foreground">Saturday night ($50–80)</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-border">
-              <p className="text-sm text-center font-medium">
-                Nights out, gambling, chaos guaranteed • Let us know what you&apos;re joining by Oct 15
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

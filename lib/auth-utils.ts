@@ -1,28 +1,66 @@
 import { supabase, User } from './supabase';
 
-// Format phone number to consistent format (remove all non-digits)
+// Format phone number to consistent format with country code
 export function formatPhoneNumber(phone: string): string {
-  return phone.replace(/\D/g, '');
+  const cleaned = phone.replace(/\D/g, '');
+
+  // If it starts with 1 and has 11 digits, it's already formatted US (+1)
+  if (cleaned.length === 11 && cleaned.startsWith('1')) {
+    return `+${cleaned}`;
+  }
+
+  // If it starts with 47 and has 10 digits, it's already formatted Norwegian (+47)
+  if (cleaned.length === 10 && cleaned.startsWith('47')) {
+    return `+${cleaned}`;
+  }
+
+  // If it's 10 digits, assume US and add +1
+  if (cleaned.length === 10) {
+    return `+1${cleaned}`;
+  }
+
+  // If it's 8 digits, assume Norwegian and add +47
+  if (cleaned.length === 8) {
+    return `+47${cleaned}`;
+  }
+
+  return phone;
 }
 
 // Validate phone number (US: 10 digits, Norwegian: 8 digits)
 export function isValidPhoneNumber(phone: string): boolean {
-  const cleaned = formatPhoneNumber(phone);
-  return cleaned.length === 10 || cleaned.length === 8;
+  const cleaned = phone.replace(/\D/g, '');
+  // Check if it's either 8 digits (Norwegian), 10 digits (US), or already formatted with country code
+  return cleaned.length === 8 ||
+         cleaned.length === 10 ||
+         (cleaned.length === 11 && cleaned.startsWith('1')) ||
+         (cleaned.length === 10 && cleaned.startsWith('47'));
 }
 
 // Display phone number in readable format
 export function displayPhoneNumber(phone: string): string {
-  const cleaned = formatPhoneNumber(phone);
+  const cleaned = phone.replace(/\D/g, '');
 
-  // US format: (555) 123-4567
-  if (cleaned.length === 10) {
-    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+  // US format with country code: +1 (555) 123-4567
+  if (cleaned.length === 11 && cleaned.startsWith('1')) {
+    const number = cleaned.slice(1);
+    return `+1 (${number.slice(0, 3)}) ${number.slice(3, 6)}-${number.slice(6)}`;
   }
 
-  // Norwegian format: 95 45 50 57
+  // Norwegian format with country code: +47 95 45 50 57
+  if (cleaned.length === 10 && cleaned.startsWith('47')) {
+    const number = cleaned.slice(2);
+    return `+47 ${number.slice(0, 2)} ${number.slice(2, 4)} ${number.slice(4, 6)} ${number.slice(6)}`;
+  }
+
+  // Legacy US format without country code: (555) 123-4567
+  if (cleaned.length === 10) {
+    return `+1 (${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+  }
+
+  // Legacy Norwegian format without country code: 95 45 50 57
   if (cleaned.length === 8) {
-    return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4, 6)} ${cleaned.slice(6)}`;
+    return `+47 ${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4, 6)} ${cleaned.slice(6)}`;
   }
 
   return phone;
@@ -58,52 +96,12 @@ export async function loginOrCreateUser(
       return { user: existingUser, error: null, isNewUser: false };
     }
 
-    // User doesn't exist - check if they're invited
-    const { data: invitedUser, error: inviteError } = await supabase
-      .from('invited_users')
-      .select('*')
-      .eq('phone_number', formattedPhone)
-      .single();
-
-    if (inviteError && inviteError.code !== 'PGRST116') {
-      console.error('Error checking invited users:', inviteError);
-    }
-
-    // If not invited, deny signup
-    if (!invitedUser) {
-      return {
-        user: null,
-        error: 'This phone number is not on the guest list. Please contact the organizer if you should have access.',
-        isNewUser: false
-      };
-    }
-
-    // User doesn't exist but is invited, create new user
-    if (!name || name.trim().length === 0) {
-      return { user: null, error: 'Please enter your name', isNewUser: true };
-    }
-
-    const { data: newUser, error: createError } = await supabase
-      .from('users')
-      .insert([{ phone_number: formattedPhone, name: name.trim(), role: 'guest' }])
-      .select()
-      .single();
-
-    if (createError) {
-      console.error('Error creating user:', createError);
-      return { user: null, error: 'Failed to create account. Please try again.', isNewUser: true };
-    }
-
-    // Create default RSVP and activity signups for new user
-    await Promise.all([
-      supabase.from('rsvps').insert([{ user_id: newUser.id }]),
-      supabase.from('activity_signups').insert([
-        { user_id: newUser.id, activity_type: 'shooting' },
-        { user_id: newUser.id, activity_type: 'show' },
-      ]),
-    ]);
-
-    return { user: newUser, error: null, isNewUser: true };
+    // User doesn't exist - not on the guest list
+    return {
+      user: null,
+      error: 'This phone number is not on the guest list. Please contact the organizer if you should have access.',
+      isNewUser: false
+    };
   } catch (error) {
     console.error('Unexpected error during login:', error);
     return { user: null, error: 'An unexpected error occurred. Please try again.', isNewUser: false };
