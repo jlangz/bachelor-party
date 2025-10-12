@@ -6,13 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Trophy, Plus, Edit2, Trash2, Save, X, DollarSign, MapPin, Clock } from 'lucide-react';
 import { Activity } from '@/lib/supabase';
@@ -492,9 +485,10 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
                                 value={optionText}
                                 onChange={(e) => {
                                   const newOptions = [...activity.participation_options];
+                                  const newText = e.target.value;
                                   newOptions[index] = typeof option === 'string'
-                                    ? e.target.value
-                                    : { ...option, text: e.target.value };
+                                    ? { id: newText, text: newText }
+                                    : { ...option, text: newText };
                                   setActivities(
                                     activities.map((a) =>
                                       a.id === activity.id ? { ...a, participation_options: newOptions } : a

@@ -4,10 +4,10 @@ import { supabase } from '@/lib/supabase';
 // PUT /api/posts/comments/[id] - Update a comment
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { comment } = body;
 
@@ -53,10 +53,10 @@ export async function PUT(
 // DELETE /api/posts/comments/[id] - Delete a comment
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const { error } = await supabase.from('post_comments').delete().eq('id', id);
 

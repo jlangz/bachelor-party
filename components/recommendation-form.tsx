@@ -7,7 +7,6 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Select } from './ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { X, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
@@ -49,13 +48,14 @@ export function RecommendationForm({ userId, onSubmit, onCancel }: Recommendatio
   const [isSubmitting, setIsSubmitting] = useState(false);
   const mapsLoaded = useGoogleMaps();
   const addressInputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteRef = useRef<any>(null);
 
   // Initialize Google Places Autocomplete once Google Maps is loaded
   useEffect(() => {
     if (!mapsLoaded || !addressInputRef.current || autocompleteRef.current) return;
 
     try {
+      const google = (window as any).google;
       const autocomplete = new google.maps.places.Autocomplete(addressInputRef.current, {
           types: ['establishment'],
           componentRestrictions: { country: 'us' },

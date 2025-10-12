@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import bcrypt from 'bcryptjs';
 
 // Check if admin user has a password set
 export async function POST(request: NextRequest) {

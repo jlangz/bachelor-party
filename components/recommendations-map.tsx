@@ -29,9 +29,9 @@ export function RecommendationsMap({
   zoom = 12,
 }: RecommendationsMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const googleMapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<Map<string, google.maps.Marker>>(new Map());
-  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const googleMapRef = useRef<any>(null);
+  const markersRef = useRef<Map<string, any>>(new Map());
+  const infoWindowRef = useRef<any>(null);
   const mapsLoaded = useGoogleMaps();
   const [mapInitialized, setMapInitialized] = useState(false);
 
@@ -40,6 +40,7 @@ export function RecommendationsMap({
     if (!mapsLoaded || !mapRef.current || mapInitialized) return;
 
     try {
+      const google = (window as any).google;
       const map = new google.maps.Map(mapRef.current, {
         center,
         zoom,
@@ -66,6 +67,8 @@ export function RecommendationsMap({
   // Update markers when recommendations change
   useEffect(() => {
     if (!googleMapRef.current || !mapInitialized) return;
+
+    const google = (window as any).google;
 
     // Clear existing markers
     markersRef.current.forEach((marker) => marker.setMap(null));
@@ -140,7 +143,7 @@ export function RecommendationsMap({
     const selectedMarker = markersRef.current.get(selectedId);
     if (selectedMarker && googleMapRef.current) {
       // Pulse animation effect
-      const originalIcon = selectedMarker.getIcon() as google.maps.Symbol;
+      const originalIcon = selectedMarker.getIcon();
       selectedMarker.setIcon({
         ...originalIcon,
         scale: 14,

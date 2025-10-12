@@ -4,10 +4,10 @@ import { supabase } from '@/lib/supabase';
 // GET /api/posts/[id] - Get a single post with details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const { data: post, error } = await supabase
       .from('posts')
@@ -36,10 +36,10 @@ export async function GET(
 // PUT /api/posts/[id] - Update a post
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { title, content } = body;
 
@@ -86,10 +86,10 @@ export async function PUT(
 // DELETE /api/posts/[id] - Delete a post
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const { error } = await supabase.from('posts').delete().eq('id', id);
 

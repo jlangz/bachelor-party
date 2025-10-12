@@ -16,8 +16,6 @@ interface RecommendationCardProps {
   onCommentDelete: (commentId: string) => Promise<void>;
   onViewOnMap: (recId: string) => void;
   onDelete?: (recId: string) => Promise<void>;
-  expanded?: boolean;
-  onExpandToggle?: () => void;
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -51,8 +49,6 @@ export function RecommendationCard({
   onCommentDelete,
   onViewOnMap,
   onDelete,
-  expanded = false,
-  onExpandToggle,
 }: RecommendationCardProps) {
   const [isLiking, setIsLiking] = useState(false);
   const [newComment, setNewComment] = useState('');

@@ -135,7 +135,7 @@ export default function Home() {
             <CardDescription>
               {showNameInput
                 ? 'Enter your name to complete registration'
-                : 'Enter your phone number to RSVP and view event details'}
+                : 'Enter your phone number to Log In!'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -202,12 +202,6 @@ export default function Home() {
             )}
           </CardContent>
         </Card>
-
-        {/* Info footer */}
-        <div className="text-center text-sm text-muted-foreground">
-          <p>Your phone number is only used to save your RSVP preferences.</p>
-          <p className="mt-1">No SMS messages will be sent.</p>
-        </div>
       </div>
     </div>
   );

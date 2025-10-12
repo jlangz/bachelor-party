@@ -4,10 +4,10 @@ import { supabase } from '@/lib/supabase';
 // GET /api/posts/[id]/comments - Get all comments for a post
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const { data: comments, error } = await supabase
       .from('post_comments')
@@ -39,10 +39,10 @@ export async function GET(
 // POST /api/posts/[id]/comments - Add a comment to a post
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { user_id, comment } = body;
 
