@@ -8,15 +8,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { displayPhoneNumber, updateUserProfile } from '@/lib/auth-utils';
 import { toast } from 'sonner';
-import { User, Save, Phone, Mail } from 'lucide-react';
+import { User, Save, Phone, Mail, MessageSquare } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, setUser, isLoading } = useAuth();
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -29,6 +31,7 @@ export default function ProfilePage() {
     if (user) {
       setName(user.name);
       setEmail(user.email || '');
+      setNote(user.note || '');
     }
   }, [user]);
 
@@ -39,13 +42,19 @@ export default function ProfilePage() {
 
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
+    const trimmedNote = note.trim();
 
     if (!trimmedName) {
       toast.error('Name cannot be empty');
       return;
     }
 
-    if (trimmedName === user.name && trimmedEmail === (user.email || '')) {
+    if (trimmedNote.length > 100) {
+      toast.error('Note must be 100 characters or less');
+      return;
+    }
+
+    if (trimmedName === user.name && trimmedEmail === (user.email || '') && trimmedNote === (user.note || '')) {
       toast.info('No changes to save');
       return;
     }
@@ -56,7 +65,8 @@ export default function ProfilePage() {
       const { user: updatedUser, error } = await updateUserProfile(
         user.id,
         trimmedName,
-        trimmedEmail || null
+        trimmedEmail || null,
+        trimmedNote || null
       );
 
       if (error) {
@@ -164,10 +174,29 @@ export default function ProfilePage() {
                 </p>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="note" className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" />
+                  Directory Note (Optional)
+                </Label>
+                <Textarea
+                  id="note"
+                  placeholder="Write something about yourself, how you know me, what you're looking forward to, etc. It'll show in the directory. (max 100 characters)"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  disabled={saving}
+                  maxLength={100}
+                  rows={2}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {note.length}/100 characters · This will be visible to all guests in the directory
+                </p>
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   type="submit"
-                  disabled={saving || (name.trim() === user.name && email.trim() === (user.email || ''))}
+                  disabled={saving || (name.trim() === user.name && email.trim() === (user.email || '') && note.trim() === (user.note || ''))}
                   className="flex-1"
                 >
                   <Save className="w-4 h-4 mr-2" />

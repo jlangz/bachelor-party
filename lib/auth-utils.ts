@@ -148,14 +148,16 @@ export function isValidEmail(email: string): boolean {
   return emailRegex.test(email.trim());
 }
 
-// Update user profile (name and email)
+// Update user profile (name, email, and note)
 export async function updateUserProfile(
   userId: string,
   newName: string,
-  newEmail?: string | null
+  newEmail?: string | null,
+  newNote?: string | null
 ): Promise<{ user: User | null; error: string | null }> {
   const trimmedName = newName.trim();
   const trimmedEmail = newEmail?.trim() || null;
+  const trimmedNote = newNote?.trim() || null;
 
   if (!trimmedName || trimmedName.length === 0) {
     return { user: null, error: 'Name cannot be empty' };
@@ -165,10 +167,14 @@ export async function updateUserProfile(
     return { user: null, error: 'Please enter a valid email address' };
   }
 
+  if (trimmedNote && trimmedNote.length > 100) {
+    return { user: null, error: 'Note must be 100 characters or less' };
+  }
+
   try {
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
-      .update({ name: trimmedName, email: trimmedEmail })
+      .update({ name: trimmedName, email: trimmedEmail, note: trimmedNote })
       .eq('id', userId)
       .select()
       .single();

@@ -6,14 +6,14 @@ import { useAuth } from '@/lib/auth-context';
 import { Navigation } from '@/components/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { supabase, User, RSVP, ActivitySignup } from '@/lib/supabase';
+import { supabase, User, RSVP, UserPredictionStats } from '@/lib/supabase';
 import { displayPhoneNumber } from '@/lib/auth-utils';
-import { Users, Search, Phone, Bed, Trophy, Calendar } from 'lucide-react';
+import { Users, Search, Phone, Bed, Trophy, Target, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 type UserWithDetails = User & {
   rsvp?: RSVP;
-  activities?: ActivitySignup[];
+  predictionStats?: UserPredictionStats;
 };
 
 export default function DirectoryPage() {
@@ -75,20 +75,20 @@ export default function DirectoryPage() {
         console.error('Error loading RSVPs:', rsvpsError);
       }
 
-      // Load all activities
-      const { data: activitiesData, error: activitiesError } = await supabase
-        .from('activity_signups')
+      // Load all prediction stats
+      const { data: predictionStatsData, error: predictionStatsError } = await supabase
+        .from('user_prediction_stats')
         .select('*');
 
-      if (activitiesError) {
-        console.error('Error loading activities:', activitiesError);
+      if (predictionStatsError) {
+        console.error('Error loading prediction stats:', predictionStatsError);
       }
 
       // Combine data
       const usersWithDetails: UserWithDetails[] = (usersData || []).map((u) => ({
         ...u,
         rsvp: rsvpsData?.find((r) => r.user_id === u.id),
-        activities: activitiesData?.filter((a) => a.user_id === u.id) || [],
+        predictionStats: predictionStatsData?.find((ps) => ps.user_id === u.id),
       }));
 
       setUsers(usersWithDetails);
@@ -164,28 +164,26 @@ export default function DirectoryPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Activity Signups</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Predictions Leader</CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm space-y-1">
-                <p>
-                  <span className="font-bold text-lg">
-                    {users.filter((u) =>
-                      u.activities?.some((a) => a.activity_type === 'shooting' && a.participation_level === 'participating')
-                    ).length}
-                  </span>{' '}
-                  shooting
-                </p>
-                <p>
-                  <span className="font-bold text-lg">
-                    {users.filter((u) =>
-                      u.activities?.some((a) => a.activity_type === 'show' && a.participation_level === 'participating')
-                    ).length}
-                  </span>{' '}
-                  show
-                </p>
-              </div>
+              {(() => {
+                const topPlayer = [...users]
+                  .filter(u => u.predictionStats)
+                  .sort((a, b) => (b.predictionStats?.total_points || 0) - (a.predictionStats?.total_points || 0))[0];
+
+                return topPlayer?.predictionStats ? (
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold text-primary">{topPlayer.name}</div>
+                    <p className="text-sm text-muted-foreground">
+                      {topPlayer.predictionStats.total_points} points
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No predictions yet</p>
+                );
+              })()}
             </CardContent>
           </Card>
         </div>
@@ -222,9 +220,6 @@ export default function DirectoryPage() {
             ) : (
               <div className="space-y-4">
                 {attendingUsers.map((u) => {
-                  const shooting = u.activities?.find((a) => a.activity_type === 'shooting');
-                  const show = u.activities?.find((a) => a.activity_type === 'show');
-
                   return (
                     <div
                       key={u.id}
@@ -237,7 +232,7 @@ export default function DirectoryPage() {
                             <div className="p-2 bg-primary/10 rounded-full">
                               <Users className="w-5 h-5 text-primary" />
                             </div>
-                            <div>
+                            <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <h3 className="font-semibold text-lg">{u.name}</h3>
                                 {u.title && (
@@ -253,6 +248,12 @@ export default function DirectoryPage() {
                                 <Phone className="w-3 h-3" />
                                 {displayPhoneNumber(u.phone_number)}
                               </a>
+                              {u.note && (
+                                <div className="mt-2 flex items-start gap-1">
+                                  <MessageSquare className="w-3 h-3 text-muted-foreground mt-0.5" />
+                                  <p className="text-sm text-muted-foreground italic">{u.note}</p>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -286,28 +287,31 @@ export default function DirectoryPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <Trophy className="w-4 h-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-xs text-muted-foreground">Shooting Range</p>
-                            <p className="text-sm font-medium">
-                              {shooting?.participation_level === 'participating' && 'Participating'}
-                              {shooting?.participation_level === 'watching' && 'Watching'}
-                              {(!shooting || shooting.participation_level === 'not_attending') && 'Not Attending'}
-                            </p>
-                          </div>
-                        </div>
+                        {u.predictionStats && (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <Target className="w-4 h-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-xs text-muted-foreground">Prediction Points</p>
+                                <p className="text-sm font-medium">
+                                  {u.predictionStats.total_points} points
+                                </p>
+                              </div>
+                            </div>
 
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-xs text-muted-foreground">Show Tickets</p>
-                            <p className="text-sm font-medium">
-                              {show?.participation_level === 'participating' && 'Attending'}
-                              {(!show || show.participation_level !== 'participating') && 'Not Attending'}
-                            </p>
-                          </div>
-                        </div>
+                            <div className="flex items-center gap-2">
+                              <Trophy className="w-4 h-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-xs text-muted-foreground">Accuracy</p>
+                                <p className="text-sm font-medium">
+                                  {u.predictionStats.total_predictions > 0
+                                    ? `${Math.round((u.predictionStats.correct_predictions / u.predictionStats.total_predictions) * 100)}%`
+                                    : 'N/A'}
+                                </p>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   );

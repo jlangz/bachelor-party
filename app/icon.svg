@@ -1,43 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Background circle with gradient -->
   <defs>
-    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#EC4899;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="champagne" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#FDE047;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#FACC15;stop-opacity:1" />
-    </linearGradient>
+    <!-- Gradient for depth -->
+    <radialGradient id="chipGradient" cx="50%" cy="30%">
+      <stop offset="0%" style="stop-color:#DC2626;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#B91C1C;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7F1D1D;stop-opacity:1" />
+    </radialGradient>
+
+    <!-- Shadow gradient -->
+    <radialGradient id="shadowGradient" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:0" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0.3" />
+    </radialGradient>
   </defs>
 
-  <!-- Background -->
-  <circle cx="32" cy="32" r="32" fill="url(#grad1)"/>
+  <!-- Drop shadow -->
+  <circle cx="32" cy="34" r="30" fill="url(#shadowGradient)" opacity="0.5"/>
 
-  <!-- Party hat (triangle) -->
-  <path d="M 32 12 L 24 28 L 40 28 Z" fill="#FFD700" stroke="#FFA500" stroke-width="1.5"/>
-  <ellipse cx="32" cy="28" rx="8" ry="2" fill="#FFA500"/>
-  <circle cx="32" cy="12" r="2.5" fill="#FF69B4"/>
+  <!-- Main chip body -->
+  <circle cx="32" cy="32" r="30" fill="url(#chipGradient)"/>
 
-  <!-- Champagne glass -->
-  <path d="M 28 35 L 30 50 L 34 50 L 36 35 Z" fill="url(#champagne)" stroke="#D4AF37" stroke-width="1"/>
+  <!-- White edge sections (8 segments) -->
+  <!-- Top -->
+  <path d="M 32 2 A 30 30 0 0 1 44 4.8 L 41.5 8.5 A 25 25 0 0 0 32 7 Z" fill="#FFFFFF"/>
+  <!-- Top Right -->
+  <path d="M 44 4.8 A 30 30 0 0 1 54.8 12 L 50.5 14.5 A 25 25 0 0 0 41.5 8.5 Z" fill="#FFFFFF"/>
+  <!-- Right -->
+  <path d="M 54.8 12 A 30 30 0 0 1 59.2 20 L 54.5 22.5 A 25 25 0 0 0 50.5 14.5 Z" fill="#FFFFFF"/>
+  <!-- Bottom Right -->
+  <path d="M 59.2 44 A 30 30 0 0 1 54.8 52 L 50.5 49.5 A 25 25 0 0 0 54.5 41.5 Z" fill="#FFFFFF"/>
+  <!-- Bottom -->
+  <path d="M 44 59.2 A 30 30 0 0 1 32 62 L 32 57 A 25 25 0 0 0 41.5 55.5 Z" fill="#FFFFFF"/>
+  <!-- Bottom Left -->
+  <path d="M 9.2 52 A 30 30 0 0 1 4.8 44 L 9.5 41.5 A 25 25 0 0 0 13.5 49.5 Z" fill="#FFFFFF"/>
+  <!-- Left -->
+  <path d="M 4.8 20 A 30 30 0 0 1 9.2 12 L 13.5 14.5 A 25 25 0 0 0 9.5 22.5 Z" fill="#FFFFFF"/>
+  <!-- Top Left -->
+  <path d="M 20 4.8 A 30 30 0 0 1 32 2 L 32 7 A 25 25 0 0 0 22.5 8.5 Z" fill="#FFFFFF"/>
 
-  <!-- Glass stem -->
-  <rect x="30" y="50" width="4" height="6" fill="#D4AF37"/>
+  <!-- Inner white ring -->
+  <circle cx="32" cy="32" r="24" fill="none" stroke="#FFFFFF" stroke-width="2"/>
 
-  <!-- Glass base -->
-  <ellipse cx="32" cy="56" rx="5" ry="1.5" fill="#B8860B"/>
+  <!-- Center circle (darker red) -->
+  <circle cx="32" cy="32" r="18" fill="#991B1B"/>
 
-  <!-- Champagne bubbles -->
-  <circle cx="30" cy="42" r="1" fill="#FFF" opacity="0.7"/>
-  <circle cx="33" cy="38" r="1" fill="#FFF" opacity="0.7"/>
-  <circle cx="31" cy="45" r="0.8" fill="#FFF" opacity="0.6"/>
+  <!-- Dollar sign or chip value -->
+  <text x="32" y="38" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#FFFFFF" text-anchor="middle">$</text>
 
-  <!-- Confetti -->
-  <rect x="18" y="30" width="2" height="4" fill="#FF6B6B" transform="rotate(45 19 32)"/>
-  <rect x="44" y="32" width="2" height="4" fill="#4ECDC4" transform="rotate(-30 45 34)"/>
-  <circle cx="22" cy="42" r="1.5" fill="#FFE66D"/>
-  <circle cx="42" cy="44" r="1.5" fill="#FF6B6B"/>
-  <rect x="20" y="48" width="2" height="3" fill="#A8E6CF" transform="rotate(20 21 49)"/>
-  <rect x="43" y="50" width="2" height="3" fill="#FFD3B6" transform="rotate(-40 44 51)"/>
+  <!-- Highlight for 3D effect -->
+  <ellipse cx="32" cy="22" rx="12" ry="6" fill="#FFFFFF" opacity="0.15"/>
 </svg>

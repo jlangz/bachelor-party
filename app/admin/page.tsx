@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InvitedUsersManager } from '@/components/invited-users-manager';
 import { EventInfoEditorWYSIWYG } from '@/components/event-info-editor-wysiwyg';
 import { ActivitiesManagerEnhanced } from '@/components/activities-manager-enhanced';
+import { PredictionsAdminManager } from '@/components/predictions-admin-manager';
 
 type UserWithDetails = User & {
   rsvp?: RSVP;
@@ -30,6 +31,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [checkingAuth, setCheckingAuth] = useState(false);
   const [users, setUsers] = useState<UserWithDetails[]>([]);
+  const [allActivities, setAllActivities] = useState<any[]>([]);
 
   const loadAllData = useCallback(async () => {
     setLoading(true);
@@ -56,13 +58,25 @@ export default function AdminPage() {
         console.error('Error loading RSVPs:', rsvpsError);
       }
 
-      // Load all activities
+      // Load all activities (the main activity definitions)
+      const { data: activitiesList, error: activitiesListError } = await supabase
+        .from('activities')
+        .select('*')
+        .order('display_order', { ascending: true });
+
+      if (activitiesListError) {
+        console.error('Error loading activities:', activitiesListError);
+      } else {
+        setAllActivities(activitiesList || []);
+      }
+
+      // Load all activity signups
       const { data: activitiesData, error: activitiesError } = await supabase
         .from('activity_signups')
         .select('*');
 
       if (activitiesError) {
-        console.error('Error loading activities:', activitiesError);
+        console.error('Error loading activity signups:', activitiesError);
       }
 
       // Combine data
@@ -163,22 +177,22 @@ export default function AdminPage() {
       'Phone',
       'RSVP Status',
       'Sleeping',
-      'Shooting',
-      'Show',
+      ...allActivities.map(act => act.name),
       'Notes',
     ];
 
     const rows = users.map((u) => {
-      const shooting = u.activities?.find((a) => a.activity_type === 'shooting');
-      const show = u.activities?.find((a) => a.activity_type === 'show');
+      const activityResponses = allActivities.map(act => {
+        const signup = u.activities?.find((a) => a.activity_id === act.id);
+        return signup?.participation_level || 'not set';
+      });
 
       return [
         u.name,
         displayPhoneNumber(u.phone_number),
         u.rsvp?.attendance_status || 'not set',
         u.rsvp?.sleeping_arrangement || 'not set',
-        shooting?.participation_level || 'not set',
-        show?.participation_level || 'not set',
+        ...activityResponses,
         u.rsvp?.notes || '',
       ];
     });
@@ -258,15 +272,13 @@ export default function AdminPage() {
     maybe: users.filter((u) => u.rsvp?.attendance_status === 'maybe').length,
     notAttending: users.filter((u) => u.rsvp?.attendance_status === 'no').length,
     houseBeds: users.filter((u) => u.rsvp?.sleeping_arrangement === 'house_bed').length,
-    shootingParticipating: users.filter((u) =>
-      u.activities?.some((a) => a.activity_type === 'shooting' && a.participation_level === 'participating')
-    ).length,
-    shootingWatching: users.filter((u) =>
-      u.activities?.some((a) => a.activity_type === 'shooting' && a.participation_level === 'watching')
-    ).length,
-    showAttending: users.filter((u) =>
-      u.activities?.some((a) => a.activity_type === 'show' && a.participation_level === 'participating')
-    ).length,
+    activitySignups: allActivities.map(activity => ({
+      id: activity.id,
+      name: activity.name,
+      count: users.filter((u) =>
+        u.activities?.some((a) => a.activity_id === activity.id && a.participation_level !== 'not_attending')
+      ).length,
+    })),
   };
 
   return (
@@ -341,15 +353,16 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent>
               <div className="text-sm space-y-1">
-                <p>
-                  <span className="font-bold text-lg">{stats.shootingParticipating}</span> shooting
-                  <span className="text-muted-foreground text-xs ml-1">
-                    (+{stats.shootingWatching} watching)
-                  </span>
-                </p>
-                <p>
-                  <span className="font-bold text-lg">{stats.showAttending}</span> show tickets
-                </p>
+                {stats.activitySignups.length === 0 ? (
+                  <p className="text-muted-foreground">No activities yet</p>
+                ) : (
+                  stats.activitySignups.map((activity) => (
+                    <p key={activity.id}>
+                      <span className="font-bold text-lg">{activity.count}</span>{' '}
+                      <span className="text-muted-foreground">{activity.name.toLowerCase()}</span>
+                    </p>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -357,10 +370,11 @@ export default function AdminPage() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="rsvps" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="rsvps">RSVPs</TabsTrigger>
             <TabsTrigger value="guests">Guests</TabsTrigger>
             <TabsTrigger value="activities">Activities</TabsTrigger>
+            <TabsTrigger value="predictions">Predictions</TabsTrigger>
             <TabsTrigger value="event">Event Info</TabsTrigger>
           </TabsList>
 
@@ -399,9 +413,6 @@ export default function AdminPage() {
                             <p className="text-center text-muted-foreground py-8">No users in this category</p>
                           ) : (
                             filteredUsers.map((u) => {
-                              const shooting = u.activities?.find((a) => a.activity_type === 'shooting');
-                              const show = u.activities?.find((a) => a.activity_type === 'show');
-
                               return (
                                 <div key={u.id} className="border border-border rounded-lg p-4">
                                   <div className="flex items-start justify-between mb-2">
@@ -435,18 +446,17 @@ export default function AdminPage() {
                                         {u.rsvp?.sleeping_arrangement?.replace('_', ' ') || 'not set'}
                                       </p>
                                     </div>
-                                    <div>
-                                      <p className="text-muted-foreground">Shooting:</p>
-                                      <p className="font-medium">
-                                        {shooting?.participation_level?.replace('_', ' ') || 'not set'}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-muted-foreground">Show:</p>
-                                      <p className="font-medium">
-                                        {show?.participation_level?.replace('_', ' ') || 'not set'}
-                                      </p>
-                                    </div>
+                                    {allActivities.map((activity) => {
+                                      const signup = u.activities?.find((a) => a.activity_id === activity.id);
+                                      return (
+                                        <div key={activity.id}>
+                                          <p className="text-muted-foreground">{activity.name}:</p>
+                                          <p className="font-medium">
+                                            {signup?.participation_level?.replace('_', ' ') || 'not set'}
+                                          </p>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
 
                                   {u.rsvp?.notes && (
@@ -476,6 +486,11 @@ export default function AdminPage() {
           {/* Activities Management Tab */}
           <TabsContent value="activities">
             <ActivitiesManagerEnhanced userId={user?.id || ''} />
+          </TabsContent>
+
+          {/* Predictions Management Tab */}
+          <TabsContent value="predictions">
+            <PredictionsAdminManager userId={user?.id || ''} />
           </TabsContent>
 
           {/* Event Info Tab */}

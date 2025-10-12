@@ -7,17 +7,19 @@ import { useAuth } from '@/lib/auth-context';
 import { Navigation } from '@/components/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { supabase, RSVP, ActivitySignup, EventInfo } from '@/lib/supabase';
-import { Calendar, Bed, Trophy, Info, ArrowRight, MapPin, Clock, User, Users } from 'lucide-react';
+import { supabase, RSVP, EventInfo } from '@/lib/supabase';
+import * as Icons from 'lucide-react';
+
+const { Calendar, Info, ArrowRight, MapPin, Clock, User, Users, Target, Trophy } = Icons;
 
 export default function Dashboard() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [rsvp, setRsvp] = useState<RSVP | null>(null);
-  const [activities, setActivities] = useState<ActivitySignup[]>([]);
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [houseBedsClaimed, setHouseBedsClaimed] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -31,6 +33,34 @@ export default function Dashboard() {
       loadEventInfo();
     }
   }, [user]);
+
+  // Live countdown timer
+  useEffect(() => {
+    const calculateCountdown = () => {
+      const eventStartDate = eventInfo?.event_date_start
+        ? new Date(eventInfo.event_date_start)
+        : new Date('2025-11-14T00:00:00');
+
+      const now = new Date();
+      const difference = eventStartDate.getTime() - now.getTime();
+
+      if (difference > 0) {
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+        setCountdown({ days, hours, minutes, seconds });
+      } else {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
+    };
+
+    calculateCountdown();
+    const interval = setInterval(calculateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [eventInfo]);
 
   const loadEventInfo = async () => {
     try {
@@ -68,16 +98,6 @@ export default function Dashboard() {
 
       if (rsvpData) {
         setRsvp(rsvpData);
-      }
-
-      // Load activity signups
-      const { data: activitiesData } = await supabase
-        .from('activity_signups')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (activitiesData) {
-        setActivities(activitiesData);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -126,20 +146,7 @@ export default function Dashboard() {
     }
   };
 
-  const getActivityStatus = (type: 'shooting' | 'show') => {
-    const activity = activities.find((a) => a.activity_type === type);
-    if (!activity || activity.participation_level === 'not_attending') return 'Not Signed Up';
-    if (activity.participation_level === 'participating') return 'Participating';
-    if (activity.participation_level === 'watching') return 'Watching';
-    return 'Not Signed Up';
-  };
-
   const attendanceStatus = getAttendanceStatus();
-
-  // Calculate days until event
-  const eventStartDate = eventInfo?.event_date_start ? new Date(eventInfo.event_date_start) : new Date('2025-11-14');
-  const today = new Date();
-  const daysUntil = Math.ceil((eventStartDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
   const formatDateRange = (start: string | null, end: string | null) => {
     if (!start || !end) return 'Dates TBA';
@@ -164,21 +171,43 @@ export default function Dashboard() {
 
         {/* Countdown */}
         <Card className="mb-8 border-primary/50 bg-primary/5">
-          <CardContent className="pt-6">
+          <CardContent className="py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Clock className="w-8 h-8 text-primary" />
+                <Clock className="w-6 h-6 text-primary" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Days Until {eventInfo?.event_name || 'Event'}</p>
-                  <p className="text-3xl font-bold text-primary">{daysUntil > 0 ? daysUntil : 'Today!'}</p>
+                  <p className="text-sm font-medium">Countdown to {eventInfo?.event_name || 'Vegas'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDateRange(eventInfo?.event_date_start || null, eventInfo?.event_date_end || null)}
+                  </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Event Date</p>
-                <p className="text-lg font-semibold">
-                  {formatDateRange(eventInfo?.event_date_start || null, eventInfo?.event_date_end || null)}
-                </p>
-              </div>
+
+              {countdown.days === 0 && countdown.hours === 0 && countdown.minutes === 0 && countdown.seconds === 0 ? (
+                <p className="text-2xl font-bold text-primary">It&apos;s Party Time! 🎉</p>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{countdown.days}</div>
+                    <div className="text-xs text-muted-foreground">days</div>
+                  </div>
+                  <div className="text-xl font-bold text-muted-foreground">:</div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{countdown.hours.toString().padStart(2, '0')}</div>
+                    <div className="text-xs text-muted-foreground">hrs</div>
+                  </div>
+                  <div className="text-xl font-bold text-muted-foreground">:</div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{countdown.minutes.toString().padStart(2, '0')}</div>
+                    <div className="text-xs text-muted-foreground">min</div>
+                  </div>
+                  <div className="text-xl font-bold text-muted-foreground">:</div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{countdown.seconds.toString().padStart(2, '0')}</div>
+                    <div className="text-xs text-muted-foreground">sec</div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -195,31 +224,16 @@ export default function Dashboard() {
               <div className={`text-2xl font-bold ${attendanceStatus.color}`}>
                 {attendanceStatus.text}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Click to update your response
-              </p>
+              <div className="mt-2 pt-2 border-t border-border">
+                <p className="text-xs text-muted-foreground">Sleeping</p>
+                <p className="text-sm font-semibold">{getSleepingArrangement()}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {houseBedsClaimed} of {eventInfo?.house_beds_total || 11} house beds claimed
+                </p>
+              </div>
               <Link href="/rsvp">
                 <Button className="w-full mt-4" size="sm">
                   Update RSVP <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Sleeping Arrangement */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Sleeping</CardTitle>
-              <Bed className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{getSleepingArrangement()}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {houseBedsClaimed} of {eventInfo?.house_beds_total || 11} house beds claimed
-              </p>
-              <Link href="/rsvp">
-                <Button className="w-full mt-4" size="sm" variant="outline">
-                  Update Choice <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </CardContent>
@@ -232,27 +246,46 @@ export default function Dashboard() {
               <Trophy className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm font-medium">Shooting Range</p>
-                  <p className="text-xs text-muted-foreground">{getActivityStatus('shooting')}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Empire Strips Back</p>
-                  <p className="text-xs text-muted-foreground">{getActivityStatus('show')}</p>
-                </div>
-              </div>
+              <div className="text-2xl font-bold mb-1">Sign Up!</div>
+              <p className="text-xs text-muted-foreground mb-4">
+                Shooting range, shows, and more!
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Select the activities you want to join! If there are some you wanna skip, go ahead and mark no, and reach out to someone else to do something on your own.
+              </p>
               <Link href="/activities">
-                <Button className="w-full mt-4" size="sm" variant="outline">
+                <Button className="w-full" size="sm" variant="outline">
                   Manage Activities <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Places */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Places to Go</CardTitle>
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold mb-1">Las Vegas Hotspots</div>
+              <p className="text-xs text-muted-foreground mb-4">
+                Recommend some stuff for us!
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Not everything is set in stone yet. If you have any good ideas add your suggestions here!
+              </p>
+              <Link href="/recommendations">
+                <Button className="w-full" size="sm" variant="outline">
+                  Browse Places <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </CardContent>
           </Card>
         </div>
 
-        {/* Quick Links */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Middle Row - Event Info and Directory */}
+        <div className="grid gap-6 md:grid-cols-2 mb-8">
           {/* Event Info */}
           <Card className="hover:border-primary/50 transition-colors">
             <CardHeader>
@@ -309,36 +342,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
-          <Card className="hover:border-primary/50 transition-colors">
-            <CardHeader>
-              <CardTitle>Need to Make Changes?</CardTitle>
-              <CardDescription>
-                Update your RSVP, sleeping arrangements, or activity signups
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Link href="/rsvp">
-                <Button className="w-full" variant="outline">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Update RSVP
-                </Button>
-              </Link>
-              <Link href="/activities">
-                <Button className="w-full" variant="outline">
-                  <Trophy className="mr-2 h-4 w-4" />
-                  Manage Activities
-                </Button>
-              </Link>
-              <Link href="/profile">
-                <Button className="w-full" variant="outline">
-                  <User className="mr-2 h-4 w-4" />
-                  Edit Profile
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
           {/* Directory */}
           <Card className="hover:border-primary/50 transition-colors">
             <CardHeader>
@@ -363,6 +366,68 @@ export default function Dashboard() {
               <Link href="/directory">
                 <Button className="w-full">
                   View Directory <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Bottom Row - Betting Pool and Profile */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Predictions Game */}
+          <Card className="hover:border-primary/50 transition-colors border-primary/30 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-primary" />
+                Betting Pool
+              </CardTitle>
+              <CardDescription>
+                Predict what will happen at the party and compete!
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-start gap-2">
+                  <Trophy className="w-4 h-4 mt-0.5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Place your bets</p>
+                    <p className="text-xs text-muted-foreground">Make predictions and climb the leaderboard</p>
+                  </div>
+                </div>
+              </div>
+              <Link href="/predictions">
+                <Button className="w-full">
+                  View Predictions <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Edit Profile */}
+          <Card className="hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Your Profile
+              </CardTitle>
+              <CardDescription>
+                Update your contact info and personal details
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-start gap-2">
+                  <User className="w-4 h-4 mt-0.5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Manage your account</p>
+                    <p className="text-xs text-muted-foreground">Edit name, phone, email, and more</p>
+                  </div>
+                </div>
+              </div>
+              <Link href="/profile">
+                <Button className="w-full" variant="outline">
+                  <User className="mr-2 h-4 w-4" />
+                  Edit Profile
                 </Button>
               </Link>
             </CardContent>

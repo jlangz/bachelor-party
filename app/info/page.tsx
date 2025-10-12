@@ -357,6 +357,7 @@ export default function InfoPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              <p>A rough outline of planned activities:</p><br/>
               <div className="space-y-6">
                 {eventInfo.schedule.map((item, index) => (
                   <div key={index} className="flex gap-6">

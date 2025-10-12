@@ -21,6 +21,7 @@ export type User = {
   invited_by: string;
   title?: string | null;
   email?: string | null;
+  note?: string | null;
   created_at: string;
 };
 
@@ -36,15 +37,11 @@ export type RSVP = {
   updated_at: string;
 };
 
-export type ActivityType = 'shooting' | 'show';
-export type ParticipationLevel = 'participating' | 'watching' | 'not_attending';
-
 export type ActivitySignup = {
   id: string;
   user_id: string;
-  activity_type: ActivityType; // Kept for backward compatibility
-  activity_id: string | null; // New: references activities table
-  participation_level: ParticipationLevel;
+  activity_id: string | null;
+  participation_level: string; // Can be any custom value from activity.participation_options
   updated_at: string;
 };
 
@@ -100,12 +97,17 @@ export type EventInfo = {
 
 export type ActivityTypeCategory = 'participatory' | 'spectator' | 'mixed';
 
+export type ParticipationOption = {
+  id: string;  // Use the text value as ID for backwards compatibility
+  text: string;
+};
+
 export type Activity = {
   id: string;
   name: string;
   description: string | null;
   activity_type: ActivityTypeCategory;
-  participation_options: string[];
+  participation_options: ParticipationOption[];
   display_order: number;
   is_active: boolean;
   created_at: string;
@@ -169,4 +171,79 @@ export type RecommendationWithUser = Recommendation & {
 
 export type RecommendationCommentWithUser = RecommendationComment & {
   user: Pick<User, 'id' | 'name'>;
+};
+
+// Predictions types
+export type PredictionCategory = 'behavior' | 'outcome' | 'timing' | 'general';
+export type PredictionStatus = 'open' | 'closed' | 'revealed';
+
+export type PredictionOption = {
+  id: string;  // Unique UUID for each option
+  text: string;
+};
+
+export type Prediction = {
+  id: string;
+  title: string;
+  description: string | null;
+  options: PredictionOption[];
+  category: PredictionCategory;
+  status: PredictionStatus;
+  betting_deadline: string | null;
+  reveal_date: string | null;
+  points_pool: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PredictionBet = {
+  id: string;
+  prediction_id: string;
+  user_id: string;
+  selected_option: string;
+  points_wagered: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PredictionResult = {
+  id: string;
+  prediction_id: string;
+  correct_option: string;
+  revealed_by: string | null;
+  revealed_at: string;
+};
+
+export type UserPredictionStats = {
+  id: string;
+  user_id: string;
+  total_points: number;
+  points_won: number;
+  points_lost: number;
+  correct_predictions: number;
+  total_predictions: number;
+  current_streak: number;
+  longest_streak: number;
+  updated_at: string;
+};
+
+// Extended types with relations
+export type PredictionWithDetails = Prediction & {
+  result?: PredictionResult;
+  user_bet?: PredictionBet;
+  total_bets: number;
+  option_counts: Record<string, number>; // Count of bets per option
+};
+
+export type LeaderboardEntry = {
+  user_id: string;
+  user_name: string;
+  total_points: number;
+  correct_predictions: number;
+  total_predictions: number;
+  accuracy: number; // Percentage
+  current_streak: number;
+  longest_streak: number;
+  rank: number;
 };

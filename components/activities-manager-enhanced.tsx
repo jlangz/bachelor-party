@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Trophy, Plus, Edit2, Trash2, Save, X, DollarSign, MapPin, Clock } from 'lucide-react';
-import { Activity, ActivityTypeCategory } from '@/lib/supabase';
+import { Activity } from '@/lib/supabase';
 import { IconSelector } from '@/components/icon-selector';
 import * as Icons from 'lucide-react';
 
@@ -26,7 +26,6 @@ interface ActivitiesManagerProps {
 type ActivityFormData = {
   name: string;
   description: string;
-  activity_type: ActivityTypeCategory;
   participation_options: string;
   icon: string;
   when_description: string;
@@ -48,8 +47,7 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
   const initialFormData: ActivityFormData = {
     name: '',
     description: '',
-    activity_type: 'participatory',
-    participation_options: 'participating,watching,not_attending',
+    participation_options: 'attending,maybe,not_attending',
     icon: 'Trophy',
     when_description: '',
     when_datetime: '',
@@ -92,7 +90,6 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
           userId,
           name: formData.name,
           description: formData.description,
-          activity_type: formData.activity_type,
           participation_options: formData.participation_options
             .split(',')
             .map((opt) => opt.trim())
@@ -267,41 +264,22 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
               />
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              {/* Activity Type */}
-              <div className="space-y-2">
-                <Label htmlFor="activity_type">Activity Type</Label>
-                <Select
-                  value={formData.activity_type}
-                  onValueChange={(value: ActivityTypeCategory) =>
-                    setFormData({ ...formData, activity_type: value })
-                  }
-                  disabled={loading}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="participatory">Participatory</SelectItem>
-                    <SelectItem value="spectator">Spectator</SelectItem>
-                    <SelectItem value="mixed">Mixed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Participation Options */}
-              <div className="space-y-2">
-                <Label htmlFor="participation_options">Answer Options (comma-separated)</Label>
-                <Input
-                  id="participation_options"
-                  value={formData.participation_options}
-                  onChange={(e) =>
-                    setFormData({ ...formData, participation_options: e.target.value })
-                  }
-                  placeholder="participating,watching,not_attending"
-                  disabled={loading}
-                />
-              </div>
+            {/* Participation Options */}
+            <div className="space-y-2">
+              <Label htmlFor="participation_options">Answer Options (comma-separated) *</Label>
+              <Input
+                id="participation_options"
+                value={formData.participation_options}
+                onChange={(e) =>
+                  setFormData({ ...formData, participation_options: e.target.value })
+                }
+                placeholder="attending,maybe,not_attending"
+                disabled={loading}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Customize the response options for this activity (e.g., "attending,interested,not_attending")
+              </p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
@@ -465,47 +443,25 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
                         />
                       </div>
 
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Activity Type</Label>
-                          <Select
-                            value={activity.activity_type}
-                            onValueChange={(value: ActivityTypeCategory) =>
-                              setActivities(
-                                activities.map((a) =>
-                                  a.id === activity.id ? { ...a, activity_type: value } : a
-                                )
+                      <div className="space-y-2">
+                        <Label>Answer Options</Label>
+                        <Input
+                          value={activity.participation_options.join(',')}
+                          onChange={(e) =>
+                            setActivities(
+                              activities.map((a) =>
+                                a.id === activity.id
+                                  ? { ...a, participation_options: e.target.value.split(',').map(s => s.trim()) }
+                                  : a
                               )
-                            }
-                            disabled={loading}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="participatory">Participatory</SelectItem>
-                              <SelectItem value="spectator">Spectator</SelectItem>
-                              <SelectItem value="mixed">Mixed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Answer Options</Label>
-                          <Input
-                            value={activity.participation_options.join(',')}
-                            onChange={(e) =>
-                              setActivities(
-                                activities.map((a) =>
-                                  a.id === activity.id
-                                    ? { ...a, participation_options: e.target.value.split(',').map(s => s.trim()) }
-                                    : a
-                                )
-                              )
-                            }
-                            disabled={loading}
-                            placeholder="participating,watching,not_attending"
-                          />
-                        </div>
+                            )
+                          }
+                          disabled={loading}
+                          placeholder="attending,maybe,not_attending"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Customize the response options for this activity
+                        </p>
                       </div>
 
                       <div className="grid sm:grid-cols-2 gap-4">
@@ -672,8 +628,6 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
                           )}
                         </div>
                         <div className="flex gap-2 mt-2 text-xs text-muted-foreground">
-                          <span className="capitalize">{activity.activity_type}</span>
-                          <span>•</span>
                           <span>Options: {activity.participation_options.join(', ')}</span>
                         </div>
                       </div>
