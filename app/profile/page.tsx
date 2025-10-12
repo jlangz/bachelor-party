@@ -20,6 +20,7 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -27,13 +28,40 @@ export default function ProfilePage() {
     }
   }, [user, isLoading, router]);
 
+  // Fetch fresh user data from database
   useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setEmail(user.email || '');
-      setNote(user.note || '');
-    }
-  }, [user]);
+    const fetchUserData = async () => {
+      if (!user) return;
+
+      try {
+        const response = await fetch(`/api/users/${user.id}`);
+        if (response.ok) {
+          const freshUserData = await response.json();
+          // Update the auth context with fresh data
+          setUser(freshUserData);
+          // Update form fields
+          setName(freshUserData.name);
+          setEmail(freshUserData.email || '');
+          setNote(freshUserData.note || '');
+        } else {
+          // Fallback to cached user data if fetch fails
+          setName(user.name);
+          setEmail(user.email || '');
+          setNote(user.note || '');
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        // Fallback to cached user data if fetch fails
+        setName(user.name);
+        setEmail(user.email || '');
+        setNote(user.note || '');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [user?.id, setUser]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +111,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>

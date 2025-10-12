@@ -21,8 +21,8 @@ export function PredictionCard({ prediction, userId, onBetPlaced, userPoints = 1
   const [selectedOption, setSelectedOption] = useState<string>(
     prediction.user_bet?.selected_option || ''
   );
-  const [pointsWagered, setPointsWagered] = useState<number>(
-    prediction.user_bet?.points_wagered || 10
+  const [pointsWagered, setPointsWagered] = useState<string>(
+    prediction.user_bet?.points_wagered ? String(prediction.user_bet.points_wagered) : ''
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,12 +46,14 @@ export function PredictionCard({ prediction, userId, onBetPlaced, userPoints = 1
   const canBet = isOpen && !deadlinePassed && !bettingNotYetOpen;
 
   const handleSubmitBet = async () => {
-    if (!selectedOption || pointsWagered <= 0) {
+    const points = parseInt(pointsWagered) || 0;
+
+    if (!selectedOption || points <= 0) {
       toast.error('Please select an option and enter points to wager');
       return;
     }
 
-    if (pointsWagered > userPoints) {
+    if (points > userPoints) {
       toast.error(`You only have ${userPoints} points available`);
       return;
     }
@@ -61,7 +63,7 @@ export function PredictionCard({ prediction, userId, onBetPlaced, userPoints = 1
       const response = await fetch(`/api/predictions/${prediction.id}/bet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, selected_option: selectedOption, points_wagered: pointsWagered }),
+        body: JSON.stringify({ userId, selected_option: selectedOption, points_wagered: points }),
       });
 
       const data = await response.json();
@@ -242,10 +244,12 @@ export function PredictionCard({ prediction, userId, onBetPlaced, userPoints = 1
               <Input
                 id={`points-${prediction.id}`}
                 type="number"
+                inputMode="numeric"
                 min="1"
                 max={userPoints}
                 value={pointsWagered}
-                onChange={(e) => setPointsWagered(parseInt(e.target.value) || 0)}
+                onChange={(e) => setPointsWagered(e.target.value)}
+                placeholder="Enter points"
                 className="w-full"
               />
               <div className="flex gap-2">
@@ -254,7 +258,7 @@ export function PredictionCard({ prediction, userId, onBetPlaced, userPoints = 1
                     key={amount}
                     size="sm"
                     variant="outline"
-                    onClick={() => setPointsWagered(Math.min(amount, userPoints))}
+                    onClick={() => setPointsWagered(String(Math.min(amount, userPoints)))}
                     disabled={amount > userPoints}
                   >
                     {amount}
@@ -264,7 +268,7 @@ export function PredictionCard({ prediction, userId, onBetPlaced, userPoints = 1
             </div>
             <Button
               onClick={handleSubmitBet}
-              disabled={!selectedOption || pointsWagered <= 0 || isSubmitting}
+              disabled={!selectedOption || !pointsWagered || parseInt(pointsWagered) <= 0 || isSubmitting}
               className="w-full"
             >
               {isSubmitting ? 'Placing Bet...' : hasUserBet ? 'Update Bet' : 'Place Bet'}

@@ -185,7 +185,7 @@ export function RecommendationCard({
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-2 pt-2">
+        <div className="flex flex-wrap items-center gap-2 pt-2">
           <Button
             variant="outline"
             size="sm"
@@ -203,15 +203,19 @@ export function RecommendationCard({
           </Button>
 
           <Button variant="outline" size="sm" onClick={() => onViewOnMap(recommendation.id)}>
-            <MapPin className="w-4 h-4 mr-1" />
-            View on Map
+            <MapPin className="w-4 h-4 mr-1 sm:inline hidden" />
+            <MapPin className="w-4 h-4 sm:hidden" />
+            <span className="hidden sm:inline">View on Map</span>
+            <span className="sm:hidden">Map</span>
           </Button>
 
           {recommendation.google_maps_url && (
             <Button variant="outline" size="sm" asChild>
               <a href={recommendation.google_maps_url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="w-4 h-4 mr-1" />
-                Directions
+                <ExternalLink className="w-4 h-4 mr-1 sm:inline hidden" />
+                <ExternalLink className="w-4 h-4 sm:hidden" />
+                <span className="hidden sm:inline">Directions</span>
+                <span className="sm:hidden">Dir</span>
               </a>
             </Button>
           )}

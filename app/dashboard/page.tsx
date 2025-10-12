@@ -172,10 +172,10 @@ export default function Dashboard() {
         {/* Countdown */}
         <Card className="mb-8 border-primary/50 bg-primary/5">
           <CardContent className="py-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <Clock className="w-6 h-6 text-primary" />
-                <div>
+                <Clock className="w-6 h-6 text-primary flex-shrink-0" />
+                <div className="text-center sm:text-left">
                   <p className="text-sm font-medium">Countdown to {eventInfo?.event_name || 'Vegas'}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatDateRange(eventInfo?.event_date_start || null, eventInfo?.event_date_end || null)}
@@ -184,27 +184,27 @@ export default function Dashboard() {
               </div>
 
               {countdown.days === 0 && countdown.hours === 0 && countdown.minutes === 0 && countdown.seconds === 0 ? (
-                <p className="text-2xl font-bold text-primary">It&apos;s Party Time! 🎉</p>
+                <p className="text-xl sm:text-2xl font-bold text-primary">It&apos;s Party Time! 🎉</p>
               ) : (
-                <div className="flex items-center gap-2">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{countdown.days}</div>
-                    <div className="text-xs text-muted-foreground">days</div>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="text-center min-w-[2.5rem] sm:min-w-[3rem]">
+                    <div className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{countdown.days}</div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground">days</div>
                   </div>
-                  <div className="text-xl font-bold text-muted-foreground">:</div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{countdown.hours.toString().padStart(2, '0')}</div>
-                    <div className="text-xs text-muted-foreground">hrs</div>
+                  <div className="text-lg sm:text-xl font-bold text-muted-foreground">:</div>
+                  <div className="text-center min-w-[2.5rem] sm:min-w-[3rem]">
+                    <div className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{countdown.hours.toString().padStart(2, '0')}</div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground">hrs</div>
                   </div>
-                  <div className="text-xl font-bold text-muted-foreground">:</div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{countdown.minutes.toString().padStart(2, '0')}</div>
-                    <div className="text-xs text-muted-foreground">min</div>
+                  <div className="text-lg sm:text-xl font-bold text-muted-foreground">:</div>
+                  <div className="text-center min-w-[2.5rem] sm:min-w-[3rem]">
+                    <div className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{countdown.minutes.toString().padStart(2, '0')}</div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground">min</div>
                   </div>
-                  <div className="text-xl font-bold text-muted-foreground">:</div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{countdown.seconds.toString().padStart(2, '0')}</div>
-                    <div className="text-xs text-muted-foreground">sec</div>
+                  <div className="text-lg sm:text-xl font-bold text-muted-foreground">:</div>
+                  <div className="text-center min-w-[2.5rem] sm:min-w-[3rem]">
+                    <div className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{countdown.seconds.toString().padStart(2, '0')}</div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground">sec</div>
                   </div>
                 </div>
               )}
