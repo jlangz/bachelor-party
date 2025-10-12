@@ -280,6 +280,7 @@ export default function DirectoryPage() {
                             <p className="text-xs text-muted-foreground">Sleeping</p>
                             <p className="text-sm font-medium">
                               {u.rsvp?.sleeping_arrangement === 'house_bed' && 'House Bed'}
+                              {u.rsvp?.sleeping_arrangement === 'house_floor' && 'House Floor'}
                               {u.rsvp?.sleeping_arrangement === 'own_place' && 'Own Place'}
                               {u.rsvp?.sleeping_arrangement === 'not_staying' && 'Not Staying'}
                               {!u.rsvp?.sleeping_arrangement && 'Not Set'}

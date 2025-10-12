@@ -137,6 +137,8 @@ export default function Dashboard() {
     switch (rsvp.sleeping_arrangement) {
       case 'house_bed':
         return 'House Bed';
+      case 'house_floor':
+        return 'House (Air Mattress/Couch)';
       case 'own_place':
         return 'Own Accommodation';
       case 'not_staying':

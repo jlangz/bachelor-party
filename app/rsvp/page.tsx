@@ -150,6 +150,7 @@ export default function RSVPPage() {
 
   const sleepingOptions: { value: SleepingArrangement; label: string; description: string; disabled?: boolean }[] = [
     { value: 'house_bed', label: 'House Bed', description: houseBedDescription, disabled: !canSelectHouseBed },
+    { value: 'house_floor', label: 'House (Air Mattress/Couch)', description: "I'll bring an air mattress or crash on a couch at the main house - we'll reach out to confirm availability" },
     { value: 'own_place', label: 'Own Accommodation', description: "I'll arrange my own hotel or Airbnb" },
     { value: 'not_staying', label: 'Not Staying Overnight', description: "I'm just joining for the events" },
   ];
@@ -243,6 +244,14 @@ export default function RSVPPage() {
                 <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
                   <p className="text-sm text-yellow-200">
                     <strong>Note:</strong> AirBnB is mostly filled by the groom, and groomsmen. If you want a bed here, confirm with Jakob.
+                  </p>
+                </div>
+              )}
+
+              {sleepingArrangement === 'house_floor' && (
+                <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/50 rounded-lg">
+                  <p className="text-sm text-blue-200">
+                    <strong>Important:</strong> We can&apos;t guarantee space for air mattresses or couches, but we&apos;ll reach out to confirm if we can accommodate you. Please bring your own air mattress or sleeping bag just in case.
                   </p>
                 </div>
               )}

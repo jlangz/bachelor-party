@@ -26,7 +26,7 @@ export type User = {
 };
 
 export type AttendanceStatus = 'yes' | 'no' | 'maybe';
-export type SleepingArrangement = 'house_bed' | 'own_place' | 'not_staying';
+export type SleepingArrangement = 'house_bed' | 'own_place' | 'not_staying' | 'house_floor';
 
 export type RSVP = {
   id: string;
