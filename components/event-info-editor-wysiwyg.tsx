@@ -8,19 +8,137 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/rich-text-editor';
 import { toast } from 'sonner';
-import { Calendar, MapPin, Home, Save, Plus, Trash2, Eye } from 'lucide-react';
+import { Calendar, MapPin, Home, Save, Plus, Trash2, Eye, GripVertical, MoveUp, MoveDown } from 'lucide-react';
 import { EventInfo, ScheduleItem, ImportantInfoItem } from '@/lib/supabase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface EventInfoEditorWYSIWYGProps {
   userId: string;
+}
+
+// Sortable Schedule Item Component
+function SortableScheduleItem({
+  item,
+  index,
+  updateScheduleItem,
+  removeScheduleItem,
+  moveScheduleItemUp,
+  moveScheduleItemDown,
+  loading,
+  isFirst,
+  isLast,
+}: {
+  item: ScheduleItem;
+  index: number;
+  updateScheduleItem: (index: number, field: keyof ScheduleItem, value: string) => void;
+  removeScheduleItem: (index: number) => void;
+  moveScheduleItemUp: (index: number) => void;
+  moveScheduleItemDown: (index: number) => void;
+  loading: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `schedule-${index}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="border border-border rounded-lg p-4 space-y-3 bg-card"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="cursor-grab active:cursor-grabbing touch-none p-1 hover:bg-accent rounded"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <span className="text-sm font-medium text-muted-foreground">
+            Item {index + 1}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => moveScheduleItemUp(index)}
+            disabled={loading || isFirst}
+            title="Move up"
+          >
+            <MoveUp className="w-4 h-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => moveScheduleItemDown(index)}
+            disabled={loading || isLast}
+            title="Move down"
+          >
+            <MoveDown className="w-4 h-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => removeScheduleItem(index)}
+            disabled={loading}
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4 text-destructive" />
+          </Button>
+        </div>
+      </div>
+      <div className="grid sm:grid-cols-3 gap-3">
+        <Input
+          placeholder="Time (e.g., Friday 6:00 PM)"
+          value={item.time}
+          onChange={(e) => updateScheduleItem(index, 'time', e.target.value)}
+          disabled={loading}
+        />
+        <Input
+          placeholder="Title"
+          value={item.title}
+          onChange={(e) => updateScheduleItem(index, 'title', e.target.value)}
+          disabled={loading}
+          className="sm:col-span-2"
+        />
+      </div>
+      <Textarea
+        placeholder="Description"
+        value={item.description}
+        onChange={(e) => updateScheduleItem(index, 'description', e.target.value)}
+        rows={2}
+        disabled={loading}
+      />
+    </div>
+  );
 }
 
 export function EventInfoEditorWYSIWYG({ userId }: EventInfoEditorWYSIWYGProps) {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
-  const [previewMode, setPreviewMode] = useState(false);
 
   useEffect(() => {
     fetchEventInfo();
@@ -96,6 +214,40 @@ export function EventInfoEditorWYSIWYG({ userId }: EventInfoEditorWYSIWYGProps) 
     const newSchedule = eventInfo.schedule.filter((_, i) => i !== index);
     setEventInfo({ ...eventInfo, schedule: newSchedule });
   };
+
+  const moveScheduleItemUp = (index: number) => {
+    if (!eventInfo || index === 0) return;
+    const newSchedule = [...eventInfo.schedule];
+    [newSchedule[index - 1], newSchedule[index]] = [newSchedule[index], newSchedule[index - 1]];
+    setEventInfo({ ...eventInfo, schedule: newSchedule });
+  };
+
+  const moveScheduleItemDown = (index: number) => {
+    if (!eventInfo || index === eventInfo.schedule.length - 1) return;
+    const newSchedule = [...eventInfo.schedule];
+    [newSchedule[index], newSchedule[index + 1]] = [newSchedule[index + 1], newSchedule[index]];
+    setEventInfo({ ...eventInfo, schedule: newSchedule });
+  };
+
+  const handleScheduleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id || !eventInfo) return;
+
+    const oldIndex = parseInt(active.id.toString().split('-')[1]);
+    const newIndex = parseInt(over.id.toString().split('-')[1]);
+
+    const newSchedule = arrayMove(eventInfo.schedule, oldIndex, newIndex);
+    setEventInfo({ ...eventInfo, schedule: newSchedule });
+  };
+
+  // Sensors for drag-and-drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const addImportantInfo = () => {
     if (!eventInfo) return;
@@ -333,7 +485,12 @@ export function EventInfoEditorWYSIWYG({ userId }: EventInfoEditorWYSIWYGProps) 
             {/* Schedule Tab */}
             <TabsContent value="schedule" className="space-y-4 mt-4">
               <div className="flex items-center justify-between mb-4">
-                <Label className="text-base">Schedule Timeline</Label>
+                <div>
+                  <Label className="text-base">Schedule Timeline</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Drag items to reorder, or use arrow buttons
+                  </p>
+                </div>
                 <Button
                   type="button"
                   onClick={addScheduleItem}
@@ -346,48 +503,33 @@ export function EventInfoEditorWYSIWYG({ userId }: EventInfoEditorWYSIWYGProps) 
               </div>
 
               {eventInfo.schedule && eventInfo.schedule.length > 0 ? (
-                <div className="space-y-4">
-                  {eventInfo.schedule.map((item, index) => (
-                    <div key={index} className="border border-border rounded-lg p-4 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          Item {index + 1}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeScheduleItem(index)}
-                          disabled={loading}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                      <div className="grid sm:grid-cols-3 gap-3">
-                        <Input
-                          placeholder="Time (e.g., Friday 6:00 PM)"
-                          value={item.time}
-                          onChange={(e) => updateScheduleItem(index, 'time', e.target.value)}
-                          disabled={loading}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleScheduleDragEnd}
+                >
+                  <SortableContext
+                    items={eventInfo.schedule.map((_, index) => `schedule-${index}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-4">
+                      {eventInfo.schedule.map((item, index) => (
+                        <SortableScheduleItem
+                          key={`schedule-${index}`}
+                          item={item}
+                          index={index}
+                          updateScheduleItem={updateScheduleItem}
+                          removeScheduleItem={removeScheduleItem}
+                          moveScheduleItemUp={moveScheduleItemUp}
+                          moveScheduleItemDown={moveScheduleItemDown}
+                          loading={loading}
+                          isFirst={index === 0}
+                          isLast={index === eventInfo.schedule.length - 1}
                         />
-                        <Input
-                          placeholder="Title"
-                          value={item.title}
-                          onChange={(e) => updateScheduleItem(index, 'title', e.target.value)}
-                          disabled={loading}
-                          className="sm:col-span-2"
-                        />
-                      </div>
-                      <Textarea
-                        placeholder="Description"
-                        value={item.description}
-                        onChange={(e) => updateScheduleItem(index, 'description', e.target.value)}
-                        rows={2}
-                        disabled={loading}
-                      />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
                   No schedule items. Click &quot;Add Item&quot; to create one.
