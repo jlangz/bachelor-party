@@ -26,7 +26,7 @@ interface ActivitiesManagerProps {
 type ActivityFormData = {
   name: string;
   description: string;
-  participation_options: string;
+  participation_options: string[];
   icon: string;
   when_description: string;
   when_datetime: string;
@@ -47,7 +47,7 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
   const initialFormData: ActivityFormData = {
     name: '',
     description: '',
-    participation_options: 'attending,maybe,not_attending',
+    participation_options: ['attending', 'maybe', 'not_attending'],
     icon: 'Trophy',
     when_description: '',
     when_datetime: '',
@@ -58,6 +58,25 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
   };
 
   const [formData, setFormData] = useState<ActivityFormData>(initialFormData);
+
+  const updateOption = (index: number, value: string) => {
+    const newOptions = [...formData.participation_options];
+    newOptions[index] = value;
+    setFormData({ ...formData, participation_options: newOptions });
+  };
+
+  const addOption = () => {
+    setFormData({ ...formData, participation_options: [...formData.participation_options, ''] });
+  };
+
+  const removeOption = (index: number) => {
+    if (formData.participation_options.length <= 2) {
+      toast.error('You need at least 2 options');
+      return;
+    }
+    const newOptions = formData.participation_options.filter((_, i) => i !== index);
+    setFormData({ ...formData, participation_options: newOptions });
+  };
 
   useEffect(() => {
     fetchActivities();
@@ -80,6 +99,14 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate options
+    const validOptions = formData.participation_options.filter((opt) => opt.trim() !== '');
+    if (validOptions.length < 2) {
+      toast.error('Please provide at least 2 options');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -89,11 +116,8 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
         body: JSON.stringify({
           userId,
           name: formData.name,
-          description: formData.description,
-          participation_options: formData.participation_options
-            .split(',')
-            .map((opt) => opt.trim())
-            .filter((opt) => opt),
+          description: formData.description || null,
+          participation_options: validOptions,
           icon: formData.icon,
           when_description: formData.when_description || null,
           when_datetime: formData.when_datetime || null,
@@ -266,19 +290,34 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
 
             {/* Participation Options */}
             <div className="space-y-2">
-              <Label htmlFor="participation_options">Answer Options (comma-separated) *</Label>
-              <Input
-                id="participation_options"
-                value={formData.participation_options}
-                onChange={(e) =>
-                  setFormData({ ...formData, participation_options: e.target.value })
-                }
-                placeholder="attending,maybe,not_attending"
-                disabled={loading}
-                required
-              />
+              <Label>Answer Options * (at least 2)</Label>
+              {formData.participation_options.map((option, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    value={option}
+                    onChange={(e) => updateOption(index, e.target.value)}
+                    placeholder={`Option ${index + 1} (e.g., attending, maybe, not_attending)`}
+                    disabled={loading}
+                  />
+                  {formData.participation_options.length > 2 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeOption(index)}
+                      disabled={loading}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={addOption} disabled={loading}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Option
+              </Button>
               <p className="text-xs text-muted-foreground">
-                Customize the response options for this activity (e.g., "attending,interested,not_attending")
+                Each option is a response guests can select for this activity
               </p>
             </div>
 
@@ -444,24 +483,69 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Answer Options</Label>
-                        <Input
-                          value={activity.participation_options.join(',')}
-                          onChange={(e) =>
+                        <Label>Answer Options (at least 2)</Label>
+                        {activity.participation_options.map((option, index) => {
+                          const optionText = typeof option === 'string' ? option : option.text;
+                          return (
+                            <div key={index} className="flex gap-2">
+                              <Input
+                                value={optionText}
+                                onChange={(e) => {
+                                  const newOptions = [...activity.participation_options];
+                                  newOptions[index] = typeof option === 'string'
+                                    ? e.target.value
+                                    : { ...option, text: e.target.value };
+                                  setActivities(
+                                    activities.map((a) =>
+                                      a.id === activity.id ? { ...a, participation_options: newOptions } : a
+                                    )
+                                  );
+                                }}
+                                placeholder={`Option ${index + 1}`}
+                                disabled={loading}
+                              />
+                              {activity.participation_options.length > 2 && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => {
+                                    const newOptions = activity.participation_options.filter((_, i) => i !== index);
+                                    if (newOptions.length < 2) {
+                                      toast.error('You need at least 2 options');
+                                      return;
+                                    }
+                                    setActivities(
+                                      activities.map((a) =>
+                                        a.id === activity.id ? { ...a, participation_options: newOptions } : a
+                                      )
+                                    );
+                                  }}
+                                  disabled={loading}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newOptions = [...activity.participation_options, { id: '', text: '' }];
                             setActivities(
                               activities.map((a) =>
-                                a.id === activity.id
-                                  ? { ...a, participation_options: e.target.value.split(',').map(s => s.trim()) }
-                                  : a
+                                a.id === activity.id ? { ...a, participation_options: newOptions } : a
                               )
-                            )
-                          }
+                            );
+                          }}
                           disabled={loading}
-                          placeholder="attending,maybe,not_attending"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Customize the response options for this activity
-                        </p>
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Option
+                        </Button>
                       </div>
 
                       <div className="grid sm:grid-cols-2 gap-4">
@@ -487,7 +571,7 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
                           <Label>Specific Date/Time</Label>
                           <Input
                             type="datetime-local"
-                            value={activity.when_datetime || ''}
+                            value={activity.when_datetime ? activity.when_datetime.slice(0, 16) : ''}
                             onChange={(e) =>
                               setActivities(
                                 activities.map((a) =>
@@ -628,7 +712,9 @@ export function ActivitiesManagerEnhanced({ userId }: ActivitiesManagerProps) {
                           )}
                         </div>
                         <div className="flex gap-2 mt-2 text-xs text-muted-foreground">
-                          <span>Options: {activity.participation_options.join(', ')}</span>
+                          <span>Options: {activity.participation_options.map(opt =>
+                            typeof opt === 'string' ? opt : opt.text
+                          ).join(', ')}</span>
                         </div>
                       </div>
                       <div className="flex gap-2">

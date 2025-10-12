@@ -298,7 +298,8 @@ export default function ActivitiesPage() {
                         <div className="flex flex-wrap gap-2 text-xs">
                           {Object.entries(counts).map(([level, count]) => {
                             const option = activity.participation_options.find(opt => opt.id === level);
-                            const label = option ? option.text.replace('_', ' ') : level.replace('_', ' ');
+                            const optionText = option ? (typeof option === 'string' ? option : (option.text || option.id)) : level;
+                            const label = optionText.replace('_', ' ');
                             return (
                               <span key={level} className="px-2 py-1 bg-muted rounded">
                                 {count} {label}
@@ -313,7 +314,9 @@ export default function ActivitiesPage() {
                     <div className="space-y-2">
                       {activity.participation_options.map((option) => {
                         const isSelected = currentResponse === option.id;
-                        const optionLabel = option.text
+                        // Handle both string and object options, with safety check for undefined text
+                        const optionText = typeof option === 'string' ? option : (option.text || option.id || '');
+                        const optionLabel = optionText
                           .split('_')
                           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                           .join(' ');

@@ -33,12 +33,17 @@ export function PredictionCard({ prediction, userId, onBetPlaced, userPoints = 1
   const userWon = hasUserBet && isRevealed && prediction.user_bet?.selected_option === correctOption;
   const userLost = hasUserBet && isRevealed && prediction.user_bet?.selected_option !== correctOption;
 
+  // Check if betting has opened yet
+  const bettingNotYetOpen = prediction.betting_opens_at
+    ? new Date(prediction.betting_opens_at) > new Date()
+    : false;
+
   // Check if deadline has passed
   const deadlinePassed = prediction.betting_deadline
     ? new Date(prediction.betting_deadline) < new Date()
     : false;
 
-  const canBet = isOpen && !deadlinePassed;
+  const canBet = isOpen && !deadlinePassed && !bettingNotYetOpen;
 
   const handleSubmitBet = async () => {
     if (!selectedOption || pointsWagered <= 0) {
@@ -97,6 +102,9 @@ export function PredictionCard({ prediction, userId, onBetPlaced, userPoints = 1
     if (deadlinePassed || !isOpen) {
       return <Badge className="bg-yellow-500/20 text-yellow-400">Closed</Badge>;
     }
+    if (bettingNotYetOpen) {
+      return <Badge className="bg-orange-500/20 text-orange-400">Not Yet Open</Badge>;
+    }
     return <Badge className="bg-blue-500/20 text-blue-400">Open</Badge>;
   };
 
@@ -148,7 +156,13 @@ export function PredictionCard({ prediction, userId, onBetPlaced, userPoints = 1
             <Users className="w-4 h-4" />
             <span>{prediction.total_bets} bets</span>
           </div>
-          {prediction.betting_deadline && (
+          {prediction.betting_opens_at && bettingNotYetOpen && (
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              <span>Opens: {formatDate(prediction.betting_opens_at)}</span>
+            </div>
+          )}
+          {prediction.betting_deadline && !bettingNotYetOpen && (
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
               <span>Deadline: {formatDate(prediction.betting_deadline)}</span>
@@ -207,6 +221,16 @@ export function PredictionCard({ prediction, userId, onBetPlaced, userPoints = 1
             );
           })}
         </div>
+
+        {/* Betting Not Yet Open Message */}
+        {isOpen && bettingNotYetOpen && !hasUserBet && (
+          <div className="p-3 bg-orange-500/10 border border-orange-500/50 rounded-lg">
+            <p className="text-sm font-medium text-orange-500 mb-1">Betting Opens Soon</p>
+            <p className="text-sm text-muted-foreground">
+              You can place your bet starting {formatDate(prediction.betting_opens_at)}
+            </p>
+          </div>
+        )}
 
         {/* Betting Interface */}
         {canBet && (

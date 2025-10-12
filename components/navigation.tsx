@@ -1,19 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from './ui/button';
-import { Home, Info, Calendar, Trophy, Shield, LogOut, Dices, User, Users, MapPin, Target } from 'lucide-react';
+import { Home, Info, Calendar, Trophy, Shield, LogOut, Dices, User, Users, MapPin, Target, Menu, X, MessageSquare } from 'lucide-react';
 
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     router.push('/');
+    setMobileMenuOpen(false);
   };
 
   const navItems = [
@@ -23,10 +26,15 @@ export function Navigation() {
     { href: '/activities', label: 'Activities', icon: Trophy },
     { href: '/predictions', label: 'Predictions', icon: Target },
     { href: '/recommendations', label: 'Places', icon: MapPin },
+    { href: '/posts', label: 'Posts', icon: MessageSquare },
     { href: '/directory', label: 'Directory', icon: Users },
     { href: '/profile', label: 'Profile', icon: User },
     { href: '/admin', label: 'Admin', icon: Shield },
   ];
+
+  const visibleNavItems = navItems.filter(
+    (item) => item.href !== '/admin' || (user && user.role === 'admin')
+  );
 
   return (
     <nav className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-50">
@@ -39,16 +47,11 @@ export function Navigation() {
             <span className="sm:hidden">JBP</span>
           </Link>
 
-          {/* Navigation Links */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {navItems.map((item) => {
+          {/* Desktop Navigation Links - Hidden below 1320px */}
+          <div className="hidden min-[1320px]:flex items-center gap-1 sm:gap-2">
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
-
-              // Hide admin link for non-admin users
-              if (item.href === '/admin' && (!user || user.role !== 'admin')) {
-                return null;
-              }
 
               return (
                 <Link key={item.href} href={item.href}>
@@ -77,7 +80,57 @@ export function Navigation() {
               </Button>
             )}
           </div>
+
+          {/* Hamburger Menu Button - Shows below 1320px */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="min-[1320px]:hidden"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="min-[1320px]:hidden border-t border-border/50 py-4">
+            <div className="flex flex-col gap-2">
+              {visibleNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Button
+                      variant={isActive ? 'default' : 'ghost'}
+                      className="w-full justify-start gap-2"
+                    >
+                      <Icon className="w-4 h-4" />
+                      {item.label}
+                    </Button>
+                  </Link>
+                );
+              })}
+
+              {/* Logout Button in Mobile Menu */}
+              {user && (
+                <Button
+                  variant="ghost"
+                  onClick={handleLogout}
+                  className="w-full justify-start gap-2 text-destructive hover:text-destructive"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

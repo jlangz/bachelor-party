@@ -42,6 +42,17 @@ export async function POST(
       );
     }
 
+    // Check if betting has opened yet
+    if (prediction.betting_opens_at) {
+      const opensAt = new Date(prediction.betting_opens_at);
+      if (opensAt > new Date()) {
+        return NextResponse.json(
+          { error: 'Betting has not opened yet' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Check if betting deadline has passed
     if (prediction.betting_deadline) {
       const deadline = new Date(prediction.betting_deadline);

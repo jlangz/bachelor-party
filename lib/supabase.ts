@@ -189,6 +189,7 @@ export type Prediction = {
   options: PredictionOption[];
   category: PredictionCategory;
   status: PredictionStatus;
+  betting_opens_at: string | null;
   betting_deadline: string | null;
   reveal_date: string | null;
   points_pool: number;

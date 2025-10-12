@@ -6,11 +6,14 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { toast } from 'sonner';
-import { UserPlus, Trash2, Users, Shield } from 'lucide-react';
+import { UserPlus, Trash2, Users, Shield, Edit, X, Check } from 'lucide-react';
 import { formatPhoneNumber, displayPhoneNumber, isValidPhoneNumber } from '@/lib/auth-utils';
+import { useAuth } from '@/lib/auth-context';
 
 export function InvitedUsersManager() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
@@ -18,6 +21,14 @@ export function InvitedUsersManager() {
   const [newTitle, setNewTitle] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    role: 'guest' as 'admin' | 'guest',
+    title: '',
+    note: '',
+  });
 
   useEffect(() => {
     loadUsers();
@@ -123,6 +134,63 @@ export function InvitedUsersManager() {
     } catch (error) {
       console.error('Error:', error);
       toast.error('An error occurred');
+    }
+  };
+
+  const startEdit = (user: User) => {
+    setEditingUserId(user.id);
+    setEditForm({
+      name: user.name,
+      email: user.email || '',
+      role: user.role,
+      title: user.title || '',
+      note: user.note || '',
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingUserId(null);
+    setEditForm({
+      name: '',
+      email: '',
+      role: 'guest',
+      title: '',
+      note: '',
+    });
+  };
+
+  const handleUpdateUser = async (userId: string) => {
+    if (!currentUser) {
+      toast.error('Not authenticated');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminUserId: currentUser.id,
+          name: editForm.name,
+          email: editForm.email || null,
+          role: editForm.role,
+          title: editForm.title || null,
+          note: editForm.note || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update user');
+      }
+
+      const updatedUser = await response.json();
+      setUsers(users.map(u => u.id === userId ? updatedUser : u));
+      toast.success('User updated successfully');
+      cancelEdit();
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      toast.error(error.message || 'Failed to update user');
     }
   };
 
@@ -234,30 +302,114 @@ export function InvitedUsersManager() {
               {adminUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between p-3 border border-primary/30 rounded-lg bg-primary/5"
                 >
-                  <div>
-                    <p className="font-medium flex items-center gap-2">
-                      {user.name}
-                      <Shield className="w-3 h-3 text-primary" />
-                      {user.title && (
-                        <span className="text-xs font-normal bg-primary/20 text-primary px-2 py-0.5 rounded">
-                          {user.title}
-                        </span>
+                  <div className="flex items-center justify-between p-3 border border-primary/30 rounded-lg bg-primary/5">
+                    <div className="flex-1">
+                      <p className="font-medium flex items-center gap-2">
+                        {user.name}
+                        <Shield className="w-3 h-3 text-primary" />
+                        {user.title && (
+                          <span className="text-xs font-normal bg-primary/20 text-primary px-2 py-0.5 rounded">
+                            {user.title}
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {displayPhoneNumber(user.phone_number)}
+                      </p>
+                      {user.email && (
+                        <p className="text-sm text-muted-foreground">
+                          {user.email}
+                        </p>
                       )}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {displayPhoneNumber(user.phone_number)}
-                    </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => startEdit(user)}
+                        className="hover:bg-primary/10"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteUser(user.id, user.name, false)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteUser(user.id, user.name, false)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+
+                  {editingUserId === user.id && (
+                    <div className="mt-2 p-4 border border-primary/50 rounded-lg bg-card space-y-3">
+                      <div className="grid gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-name-${user.id}`}>Name</Label>
+                          <Input
+                            id={`edit-name-${user.id}`}
+                            value={editForm.name}
+                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-email-${user.id}`}>Email</Label>
+                          <Input
+                            id={`edit-email-${user.id}`}
+                            type="email"
+                            value={editForm.email}
+                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                            placeholder="user@example.com"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-role-${user.id}`}>Role</Label>
+                          <Select
+                            value={editForm.role}
+                            onValueChange={(value: 'admin' | 'guest') => setEditForm({ ...editForm, role: value })}
+                          >
+                            <SelectTrigger id={`edit-role-${user.id}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="guest">Guest</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-title-${user.id}`}>Title</Label>
+                          <Input
+                            id={`edit-title-${user.id}`}
+                            value={editForm.title}
+                            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                            placeholder="e.g., Best Man, Brother"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-note-${user.id}`}>Note</Label>
+                          <Input
+                            id={`edit-note-${user.id}`}
+                            value={editForm.note}
+                            onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
+                            placeholder="Internal note"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={() => handleUpdateUser(user.id)} size="sm">
+                          <Check className="w-4 h-4 mr-2" />
+                          Save
+                        </Button>
+                        <Button onClick={cancelEdit} variant="outline" size="sm">
+                          <X className="w-4 h-4 mr-2" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -290,29 +442,113 @@ export function InvitedUsersManager() {
               {guestUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-accent/50 transition-colors"
                 >
-                  <div>
-                    <p className="font-medium flex items-center gap-2">
-                      {user.name}
-                      {user.title && (
-                        <span className="text-xs font-normal bg-accent text-foreground px-2 py-0.5 rounded">
-                          {user.title}
-                        </span>
+                  <div className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-accent/50 transition-colors">
+                    <div>
+                      <p className="font-medium flex items-center gap-2">
+                        {user.name}
+                        {user.title && (
+                          <span className="text-xs font-normal bg-accent text-foreground px-2 py-0.5 rounded">
+                            {user.title}
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {displayPhoneNumber(user.phone_number)}
+                      </p>
+                      {user.email && (
+                        <p className="text-sm text-muted-foreground">
+                          {user.email}
+                        </p>
                       )}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {displayPhoneNumber(user.phone_number)}
-                    </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => startEdit(user)}
+                        className="hover:bg-primary/10"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteUser(user.id, user.name, false)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteUser(user.id, user.name, false)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+
+                  {editingUserId === user.id && (
+                    <div className="mt-2 p-4 border border-primary/50 rounded-lg bg-card space-y-3">
+                      <div className="grid gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-name-${user.id}`}>Name</Label>
+                          <Input
+                            id={`edit-name-${user.id}`}
+                            value={editForm.name}
+                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-email-${user.id}`}>Email</Label>
+                          <Input
+                            id={`edit-email-${user.id}`}
+                            type="email"
+                            value={editForm.email}
+                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                            placeholder="user@example.com"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-role-${user.id}`}>Role</Label>
+                          <Select
+                            value={editForm.role}
+                            onValueChange={(value: 'admin' | 'guest') => setEditForm({ ...editForm, role: value })}
+                          >
+                            <SelectTrigger id={`edit-role-${user.id}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="guest">Guest</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-title-${user.id}`}>Title</Label>
+                          <Input
+                            id={`edit-title-${user.id}`}
+                            value={editForm.title}
+                            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                            placeholder="e.g., Best Man, Brother"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`edit-note-${user.id}`}>Note</Label>
+                          <Input
+                            id={`edit-note-${user.id}`}
+                            value={editForm.note}
+                            onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
+                            placeholder="Internal note"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={() => handleUpdateUser(user.id)} size="sm">
+                          <Check className="w-4 h-4 mr-2" />
+                          Save
+                        </Button>
+                        <Button onClick={cancelEdit} variant="outline" size="sm">
+                          <X className="w-4 h-4 mr-2" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

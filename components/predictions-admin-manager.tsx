@@ -29,6 +29,7 @@ export function PredictionsAdminManager({ userId }: PredictionsAdminManagerProps
     description: '',
     options: ['', ''],
     category: 'general' as PredictionCategory,
+    betting_opens_at: '',
     betting_deadline: '',
     reveal_date: '',
     points_pool: 100,
@@ -61,6 +62,7 @@ export function PredictionsAdminManager({ userId }: PredictionsAdminManagerProps
       description: '',
       options: ['', ''],
       category: 'general',
+      betting_opens_at: '',
       betting_deadline: '',
       reveal_date: '',
       points_pool: 100,
@@ -83,6 +85,7 @@ export function PredictionsAdminManager({ userId }: PredictionsAdminManagerProps
       userId,
       ...formData,
       options: validOptions,
+      betting_opens_at: formData.betting_opens_at || null,
       betting_deadline: formData.betting_deadline || null,
       reveal_date: formData.reveal_date || null,
     };
@@ -202,6 +205,7 @@ export function PredictionsAdminManager({ userId }: PredictionsAdminManagerProps
       description: prediction.description || '',
       options: optionTexts,
       category: prediction.category,
+      betting_opens_at: prediction.betting_opens_at ? prediction.betting_opens_at.slice(0, 16) : '',
       betting_deadline: prediction.betting_deadline ? prediction.betting_deadline.slice(0, 16) : '',
       reveal_date: prediction.reveal_date ? prediction.reveal_date.slice(0, 16) : '',
       points_pool: prediction.points_pool,
@@ -320,6 +324,20 @@ export function PredictionsAdminManager({ userId }: PredictionsAdminManagerProps
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="betting_opens_at">Betting Opens At</Label>
+                  <Input
+                    id="betting_opens_at"
+                    type="datetime-local"
+                    value={formData.betting_opens_at}
+                    onChange={(e) =>
+                      setFormData({ ...formData, betting_opens_at: e.target.value })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    When can users start placing bets? (Leave empty for immediate)
+                  </p>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="betting_deadline">Betting Deadline</Label>
                   <Input
                     id="betting_deadline"
@@ -329,16 +347,23 @@ export function PredictionsAdminManager({ userId }: PredictionsAdminManagerProps
                       setFormData({ ...formData, betting_deadline: e.target.value })
                     }
                   />
+                  <p className="text-xs text-muted-foreground">
+                    When does betting close?
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reveal_date">Planned Reveal Date</Label>
-                  <Input
-                    id="reveal_date"
-                    type="datetime-local"
-                    value={formData.reveal_date}
-                    onChange={(e) => setFormData({ ...formData, reveal_date: e.target.value })}
-                  />
-                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reveal_date">Planned Reveal Date</Label>
+                <Input
+                  id="reveal_date"
+                  type="datetime-local"
+                  value={formData.reveal_date}
+                  onChange={(e) => setFormData({ ...formData, reveal_date: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  When will the result be revealed? (Informational only)
+                </p>
               </div>
 
               <div className="space-y-2">

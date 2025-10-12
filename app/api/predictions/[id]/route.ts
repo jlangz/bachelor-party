@@ -112,6 +112,7 @@ export async function PATCH(
     }
     if (body.category !== undefined) updates.category = body.category;
     if (body.status !== undefined) updates.status = body.status;
+    if (body.betting_opens_at !== undefined) updates.betting_opens_at = body.betting_opens_at;
     if (body.betting_deadline !== undefined) updates.betting_deadline = body.betting_deadline;
     if (body.reveal_date !== undefined) updates.reveal_date = body.reveal_date;
     if (body.points_pool !== undefined) updates.points_pool = body.points_pool;

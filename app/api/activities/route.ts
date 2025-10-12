@@ -32,7 +32,20 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, name, description, activity_type, participation_options } = body;
+    const {
+      userId,
+      name,
+      description,
+      activity_type,
+      participation_options,
+      icon,
+      when_datetime,
+      when_description,
+      cost,
+      cost_description,
+      location,
+      additional_notes,
+    } = body;
 
     if (!userId) {
       return NextResponse.json(
@@ -59,6 +72,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    // Convert participation_options to proper format if they're strings or objects with text property
+    let formattedOptions = participation_options || ['participating', 'watching', 'not_attending'];
+    if (Array.isArray(formattedOptions)) {
+      formattedOptions = formattedOptions.map((opt: any) => {
+        if (typeof opt === 'string') {
+          return { id: opt, text: opt };
+        } else if (opt && typeof opt === 'object' && opt.text) {
+          return { id: opt.id || opt.text, text: opt.text };
+        }
+        return opt;
+      });
+    }
+
     // Get the max display_order to add new activity at the end
     const { data: maxOrderData } = await supabase
       .from('activities')
@@ -74,9 +100,16 @@ export async function POST(request: NextRequest) {
       .from('activities')
       .insert({
         name,
-        description,
+        description: description || null,
         activity_type: activity_type || 'participatory',
-        participation_options: participation_options || ['participating', 'watching', 'not_attending'],
+        participation_options: formattedOptions,
+        icon: icon || 'Trophy',
+        when_datetime: when_datetime || null,
+        when_description: when_description || null,
+        cost: cost || null,
+        cost_description: cost_description || null,
+        location: location || null,
+        additional_notes: additional_notes || null,
         display_order: newDisplayOrder,
         is_active: true,
         created_by: userId,

@@ -29,6 +29,18 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    // Convert participation_options to proper format if they're strings
+    if (activityData.participation_options && Array.isArray(activityData.participation_options)) {
+      activityData.participation_options = activityData.participation_options.map((opt: any) => {
+        if (typeof opt === 'string') {
+          return { id: opt, text: opt };
+        } else if (opt && typeof opt === 'object' && opt.text) {
+          return { id: opt.id || opt.text, text: opt.text };
+        }
+        return opt;
+      });
+    }
+
     // Update activity
     const { data, error } = await supabase
       .from('activities')
