@@ -41,16 +41,23 @@ export default function InfoPage() {
   const formatDateRange = (start: string | null, end: string | null, startTime?: string | null, endTime?: string | null) => {
     if (!start || !end) return 'Dates TBA';
 
-    const startDate = new Date(start);
-    const endDate = new Date(end);
+    // Parse date strings directly to avoid timezone issues
+    const [startYear, startMonth, startDay] = start.split('-').map(Number);
+    const [endYear, endMonth, endDay] = end.split('-').map(Number);
 
-    const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' };
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
 
     let dateStr = '';
-    if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
-      dateStr = `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${endDate.getDate()}, ${endDate.getFullYear()}`;
+    if (startMonth === endMonth && startYear === endYear) {
+      // Same month and year: "November 14 - 17, 2025"
+      dateStr = `${monthNames[startMonth - 1]} ${startDay} - ${endDay}, ${startYear}`;
+    } else if (startYear === endYear) {
+      // Same year, different months: "November 14 - December 17, 2025"
+      dateStr = `${monthNames[startMonth - 1]} ${startDay} - ${monthNames[endMonth - 1]} ${endDay}, ${startYear}`;
     } else {
-      dateStr = `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+      // Different years: "December 30, 2025 - January 2, 2026"
+      dateStr = `${monthNames[startMonth - 1]} ${startDay}, ${startYear} - ${monthNames[endMonth - 1]} ${endDay}, ${endYear}`;
     }
 
     // Add times if available

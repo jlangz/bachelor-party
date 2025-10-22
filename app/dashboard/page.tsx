@@ -37,9 +37,15 @@ export default function Dashboard() {
   // Live countdown timer
   useEffect(() => {
     const calculateCountdown = () => {
-      const eventStartDate = eventInfo?.event_date_start
-        ? new Date(eventInfo.event_date_start)
-        : new Date('2025-11-14T00:00:00');
+      // Parse date string to avoid timezone issues
+      let eventStartDate: Date;
+      if (eventInfo?.event_date_start) {
+        const [year, month, day] = eventInfo.event_date_start.split('-').map(Number);
+        // Create date at midnight local time
+        eventStartDate = new Date(year, month - 1, day, 0, 0, 0);
+      } else {
+        eventStartDate = new Date(2025, 10, 14, 0, 0, 0); // November 14, 2025
+      }
 
       const now = new Date();
       const difference = eventStartDate.getTime() - now.getTime();
@@ -152,10 +158,24 @@ export default function Dashboard() {
 
   const formatDateRange = (start: string | null, end: string | null) => {
     if (!start || !end) return 'Dates TBA';
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-    return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+
+    // Parse date strings directly to avoid timezone issues
+    const [startYear, startMonth, startDay] = start.split('-').map(Number);
+    const [endYear, endMonth, endDay] = end.split('-').map(Number);
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    if (startMonth === endMonth && startYear === endYear) {
+      // Same month and year: "Nov 14 - 17, 2025"
+      return `${monthNames[startMonth - 1]} ${startDay} - ${endDay}, ${startYear}`;
+    } else if (startYear === endYear) {
+      // Same year, different months: "Nov 14 - Dec 17, 2025"
+      return `${monthNames[startMonth - 1]} ${startDay} - ${monthNames[endMonth - 1]} ${endDay}, ${startYear}`;
+    } else {
+      // Different years: "Dec 30, 2025 - Jan 2, 2026"
+      return `${monthNames[startMonth - 1]} ${startDay}, ${startYear} - ${monthNames[endMonth - 1]} ${endDay}, ${endYear}`;
+    }
   };
 
   return (
